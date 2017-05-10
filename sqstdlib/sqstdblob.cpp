@@ -114,7 +114,7 @@ static SQInteger _blob__typeof(HSQUIRRELVM v)
     return 1;
 }
 
-static SQInteger _blob_releasehook(SQUserPointer p, SQInteger SQ_UNUSED_ARG(size))
+static SQInteger _blob_releasehook(SQUserPointer p, SQInteger SQ_UNUSED_ARG(size), HSQUIRRELSS SQ_UNUSED_ARG(ss))
 {
     SQBlob *self = (SQBlob*)p;
     self->~SQBlob();

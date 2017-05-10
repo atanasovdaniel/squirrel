@@ -186,6 +186,28 @@ SQUnsignedInteger sq_getvmrefcount(HSQUIRRELVM SQ_UNUSED_ARG(v), const HSQOBJECT
     return po->_unVal.pRefCounted->_uiRef;
 }
 
+void sq_ssaddref(HSQUIRRELSS ss,HSQOBJECT *po)
+{
+    if(!ISREFCOUNTED(type(*po))) return;
+#ifdef NO_GARBAGE_COLLECTOR
+    __AddRef(po->_type,po->_unVal);
+#else
+    ss->_refs_table.AddRef(*po);
+#endif
+}
+
+SQBool sq_ssrelease(HSQUIRRELSS ss,HSQOBJECT *po)
+{
+    if(!ISREFCOUNTED(type(*po))) return SQTrue;
+#ifdef NO_GARBAGE_COLLECTOR
+    bool ret = (po->_unVal.pRefCounted->_uiRef <= 1) ? SQTrue : SQFalse;
+    __Release(po->_type,po->_unVal);
+    return ret; //the ret val doesn't work(and cannot be fixed)
+#else
+    return ss->_refs_table.Release(*po);
+#endif
+}
+
 const SQChar *sq_objtostring(const HSQOBJECT *o)
 {
     if(sq_type(*o) == OT_STRING) {

@@ -366,7 +366,7 @@ static SQInteger _string_endswith(HSQUIRRELVM v)
     SQRex *self = NULL; \
     sq_getinstanceup(v,1,(SQUserPointer *)&self,0);
 
-static SQInteger _rexobj_releasehook(SQUserPointer p, SQInteger SQ_UNUSED_ARG(size))
+static SQInteger _rexobj_releasehook(SQUserPointer p, SQInteger SQ_UNUSED_ARG(size), HSQUIRRELSS SQ_UNUSED_ARG(ss))
 {
     SQRex *self = ((SQRex *)p);
     sqstd_rex_free(self);

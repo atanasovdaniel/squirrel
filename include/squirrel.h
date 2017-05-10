@@ -44,6 +44,7 @@ extern "C" {
 #define SQTrue  (1)
 #define SQFalse (0)
 
+struct SQSharedState;
 struct SQVM;
 struct SQTable;
 struct SQArray;
@@ -171,11 +172,12 @@ typedef struct tagSQStackInfos{
     SQInteger line;
 }SQStackInfos;
 
+typedef struct SQSharedState* HSQUIRRELSS;
 typedef struct SQVM* HSQUIRRELVM;
 typedef SQObject HSQOBJECT;
 typedef SQMemberHandle HSQMEMBERHANDLE;
 typedef SQInteger (*SQFUNCTION)(HSQUIRRELVM);
-typedef SQInteger (*SQRELEASEHOOK)(SQUserPointer,SQInteger size);
+typedef SQInteger (*SQRELEASEHOOK)(SQUserPointer,SQInteger size,HSQUIRRELSS ss);
 typedef void (*SQCOMPILERERROR)(HSQUIRRELVM,const SQChar * /*desc*/,const SQChar * /*source*/,SQInteger /*line*/,SQInteger /*column*/);
 typedef void (*SQPRINTFUNCTION)(HSQUIRRELVM,const SQChar * ,...);
 typedef void (*SQDEBUGHOOK)(HSQUIRRELVM /*v*/, SQInteger /*type*/, const SQChar * /*sourcename*/, SQInteger /*line*/, const SQChar * /*funcname*/);
@@ -340,6 +342,8 @@ SQUIRREL_API void sq_addref(HSQUIRRELVM v,HSQOBJECT *po);
 SQUIRREL_API SQBool sq_release(HSQUIRRELVM v,HSQOBJECT *po);
 SQUIRREL_API SQUnsignedInteger sq_getrefcount(HSQUIRRELVM v,HSQOBJECT *po);
 SQUIRREL_API void sq_resetobject(HSQOBJECT *po);
+SQUIRREL_API void sq_ssaddref(HSQUIRRELSS ss,HSQOBJECT *po);
+SQUIRREL_API SQBool sq_ssrelease(HSQUIRRELSS ss,HSQOBJECT *po);
 SQUIRREL_API const SQChar *sq_objtostring(const HSQOBJECT *o);
 SQUIRREL_API SQBool sq_objtobool(const HSQOBJECT *o);
 SQUIRREL_API SQInteger sq_objtointeger(const HSQOBJECT *o);

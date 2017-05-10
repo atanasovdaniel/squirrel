@@ -61,7 +61,7 @@ public:
     bool GetAttributes(const SQObjectPtr &key,SQObjectPtr &outval);
     void Lock() { _locked = true; if(_base) _base->Lock(); }
     void Release() {
-        if (_hook) { _hook(_typetag,0);}
+        if (_hook) { _hook(_typetag,0,_sharedstate);}
         sq_delete(this, SQClass);
     }
     void Finalize();
@@ -137,7 +137,7 @@ public:
     }
     void Release() {
         _uiRef++;
-        if (_hook) { _hook(_userpointer,0);}
+        if (_hook) { _hook(_userpointer,0,_sharedstate);}
         _uiRef--;
         if(_uiRef > 0) return;
         SQInteger size = _memsize;

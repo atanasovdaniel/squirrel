@@ -156,7 +156,7 @@ void SQSharedState::Init()
 
 SQSharedState::~SQSharedState()
 {
-    if(_releasehook) { _releasehook(_foreignptr,0); _releasehook = NULL; }
+    if(_releasehook) { _releasehook(_foreignptr,0,this); _releasehook = NULL; }
     _constructoridx.Null();
     _table(_registry)->Finalize();
     _table(_consts)->Finalize();
