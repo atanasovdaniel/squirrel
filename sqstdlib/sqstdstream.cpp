@@ -384,6 +384,12 @@ SQRESULT sqstd_register_iolib(HSQUIRRELVM v)
 	}
 	sq_poptop(v);
 
+	if(SQ_FAILED(sqstd_registerclass(v,&_sqstd_popen_decl)))
+	{
+		return SQ_ERROR;
+	}
+	sq_poptop(v);
+
 	if(SQ_FAILED(sqstd_registerclass(v,&_sqstd_streamreader_decl))) {
 		return SQ_ERROR;
 	}

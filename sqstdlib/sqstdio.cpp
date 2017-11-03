@@ -91,6 +91,64 @@ SQFILE sqstd_fopen(const SQChar *filename ,const SQChar *mode)
 	}
 }
 
+struct SQFPipe : public SQFile {
+    SQFPipe() { _handle = NULL; _owns = false;}
+    SQFPipe( FILE *file, bool owns) { _handle = file; _owns = owns;}
+    bool Open(const SQChar *command ,const SQChar *mode) {
+        Close();
+#ifndef SQUNICODE
+#ifdef _WIN32
+        if( (_handle = _popen(command,mode)) ) {
+#else // _WIN32
+        if( (_handle = popen(command,mode)) ) {
+#endif // _WIN32
+#else // SQUNICODE
+        if( (_handle = _wpopen(command,mode)) ) {
+#endif // SQUNICODE
+            _owns = true;
+            return true;
+        }
+        return false;
+    }
+	
+    SQInteger Close() {
+		SQInteger r = 0;
+        if( _handle && _owns) {
+#ifdef _WIN32
+            r = _pclose( _handle);
+#else
+            r = pclose( _handle);
+#endif
+        }
+        _handle = NULL;
+        _owns = false;
+		return r;
+    }
+	
+	void _Release() {
+		this->~SQFPipe();
+		sq_free(this,sizeof(SQFPipe));
+	}
+};
+
+
+SQFILE sqstd_popen(const SQChar *command ,const SQChar *mode)
+{
+    SQFPipe *f;
+	
+    f = new (sq_malloc(sizeof(SQFPipe)))SQFPipe();
+	f->Open( command, mode);
+	if( f->IsValid())
+	{
+		return (SQFILE)f;
+	}
+	else
+	{
+		f->_Release();
+		return NULL;
+	}
+}
+
 static SQInteger _file__typeof(HSQUIRRELVM v)
 {
     sq_pushstring(v,_sqstd_file_decl.name,-1);
@@ -146,6 +204,63 @@ const SQRegClass _sqstd_file_decl = {
 	NULL,				// globals
 };
 
+static SQInteger _popen__typeof(HSQUIRRELVM v)
+{
+    sq_pushstring(v,_sqstd_popen_decl.name,-1);
+    return 1;
+}
+
+static SQInteger _popen_constructor(HSQUIRRELVM v)
+{
+    const SQChar *command,*mode;
+    SQFPipe *f;
+    if(sq_gettype(v,2) == OT_STRING && sq_gettype(v,3) == OT_STRING) {
+        sq_getstring(v, 2, &command);
+        sq_getstring(v, 3, &mode);
+	    f = new (sq_malloc(sizeof(SQFPipe)))SQFPipe();
+		f->Open( command, mode);
+		if( !f->IsValid())
+		{
+			f->_Release();
+			return sq_throwerror(v, _SC("cannot popen command"));
+		}
+    } else if(sq_gettype(v,2) == OT_USERPOINTER) {
+	    FILE *fh;
+	    bool owns = true;
+        sq_getuserpointer(v,2,(SQUserPointer*)&fh);
+        owns = !(sq_gettype(v,3) == OT_NULL);
+	    f = new (sq_malloc(sizeof(SQFPipe)))SQFPipe(fh,owns);
+    } else {
+        return sq_throwerror(v,_SC("wrong parameter"));
+    }
+
+    if(SQ_FAILED(sq_setinstanceup(v,1,f))) {
+        //f->~SQFile();
+        //sq_free(f,sizeof(SQFile));
+		f->_Release();
+        return sq_throwerror(v, _SC("cannot create popen instance"));
+    }
+    sq_setreleasehook(v,1,__sqstd_stream_releasehook);
+    return 0;
+}
+
+//bindings
+#define _DECL_POPEN_FUNC(name,nparams,typecheck) {_SC(#name),_popen_##name,nparams,typecheck}
+static const SQRegFunction _popen_methods[] = {
+    _DECL_POPEN_FUNC(constructor,3,_SC("x")),
+    _DECL_POPEN_FUNC(_typeof,1,_SC("x")),
+    {NULL,(SQFUNCTION)0,0,NULL}
+};
+
+const SQRegClass _sqstd_popen_decl = {
+	&_sqstd_file_decl,	// base_class
+    _SC("std_popen"),	// reg_name
+    _SC("popen"),		// name
+	NULL,				// members
+	_popen_methods,		// methods
+	NULL,				// globals
+};
+
 SQRESULT sqstd_createfile(HSQUIRRELVM v, SQUserPointer file,SQBool own)
 {
     SQInteger top = sq_gettop(v);
@@ -188,6 +303,12 @@ SQRESULT sqstd_getfile(HSQUIRRELVM v, SQInteger idx, SQUserPointer *file)
 // 		return SQ_ERROR;
 // 	}
 // 	sq_poptop(v);
+// 	if(SQ_FAILED(sqstd_registerclass(v,&_sqstd_popen_decl)))
+// 	{
+// 		return SQ_ERROR;
+// 	}
+// 	sq_poptop(v);
+//     
 //     sq_pushstring(v,_SC("stdout"),-1);
 //     sqstd_createfile(v,stdout,SQFalse);
 //     sq_newslot(v,-3,SQFalse);

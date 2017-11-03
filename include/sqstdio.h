@@ -78,6 +78,7 @@ SQUIRREL_API SQRESULT sqstd_dofile(HSQUIRRELVM v,const SQChar *filename,SQBool r
 SQUIRREL_API SQRESULT sqstd_writeclosuretofile(HSQUIRRELVM v,const SQChar *filename);
 
 SQUIRREL_API SQRESULT sqstd_register_iolib(HSQUIRRELVM v);
+//SQUIRREL_API SQRESULT sqstd_register_fileiolib(HSQUIRRELVM v);
 SQUIRREL_API SQRESULT sqstd_register_squirrelio(HSQUIRRELVM v);
 //SQUIRREL_API SQRESULT sqstd_register_textreader(HSQUIRRELVM v);
 //SQUIRREL_API SQRESULT sqstd_register_streamreader(HSQUIRRELVM v);

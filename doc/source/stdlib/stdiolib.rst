@@ -209,6 +209,22 @@ The file class
 
     creates a file with read/write access in the current directory.
 
++++++++++++++++
+The popen class
++++++++++++++++
+
+    Pipe stream to or from a process
+    
+    Popen class extends class stream.
+
+.. js:class:: popen(command, patten)
+
+    It's constructor imitates the behaviour of the C runtime function popen for eg. ::
+
+        local myls = popen("ls -la","r");
+
+    pipes output of command "ls -la" to stream myls.
+
 ++++++++++++++++++++++
 The streamreader class
 ++++++++++++++++++++++
