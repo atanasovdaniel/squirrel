@@ -4,7 +4,6 @@
 #include <squirrel.h>
 #include <sqstdaux.h>
 #include <sqstdio.h>
-#include "sqstdstream.h"
 
 //File
 struct SQFile : public SQStream {

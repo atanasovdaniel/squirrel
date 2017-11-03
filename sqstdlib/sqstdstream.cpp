@@ -7,7 +7,6 @@
 #include <sqstdaux.h>
 #include <sqstdio.h>
 #include <sqstdblob.h>
-#include "sqstdstream.h"
 
 // basic stream API
 
@@ -74,7 +73,7 @@ SQInteger __sqstd_stream_releasehook(SQUserPointer p, SQInteger SQ_UNUSED_ARG(si
     if(!self || !self->IsValid())  \
         return sq_throwerror(v,_SC("the stream is invalid"));
 
-SQInteger _stream_readblob(HSQUIRRELVM v)
+static SQInteger _stream_readblob(HSQUIRRELVM v)
 {
     SETUP_STREAM(v);
     SQUserPointer data,blobp;
@@ -90,7 +89,7 @@ SQInteger _stream_readblob(HSQUIRRELVM v)
     return 1;
 }
 
-SQInteger _stream_readline(HSQUIRRELVM v)
+static SQInteger _stream_readline(HSQUIRRELVM v)
 {
     SETUP_STREAM(v);
 	SQChar *buf = NULL;
@@ -127,7 +126,7 @@ SQInteger _stream_readline(HSQUIRRELVM v)
 #define SAFE_READN(ptr,len) { \
     if(self->Read(ptr,len) != len) return sq_throwerror(v,_SC("io error")); \
     }
-SQInteger _stream_readn(HSQUIRRELVM v)
+static SQInteger _stream_readn(HSQUIRRELVM v)
 {
     SETUP_STREAM(v);
     SQInteger format;
@@ -187,7 +186,7 @@ SQInteger _stream_readn(HSQUIRRELVM v)
     return 1;
 }
 
-SQInteger _stream_writeblob(HSQUIRRELVM v)
+static SQInteger _stream_writeblob(HSQUIRRELVM v)
 {
     SQUserPointer data;
     SQInteger size;
@@ -201,7 +200,7 @@ SQInteger _stream_writeblob(HSQUIRRELVM v)
     return 1;
 }
 
-SQInteger _stream_print(HSQUIRRELVM v)
+static SQInteger _stream_print(HSQUIRRELVM v)
 {
     const SQChar *data;
     SQInteger size;
@@ -214,7 +213,7 @@ SQInteger _stream_print(HSQUIRRELVM v)
     return 1;
 }
 
-SQInteger _stream_writen(HSQUIRRELVM v)
+static SQInteger _stream_writen(HSQUIRRELVM v)
 {
     SETUP_STREAM(v);
     SQInteger format, ti;
@@ -283,7 +282,7 @@ SQInteger _stream_writen(HSQUIRRELVM v)
     return 0;
 }
 
-SQInteger _stream_seek(HSQUIRRELVM v)
+static SQInteger _stream_seek(HSQUIRRELVM v)
 {
     SETUP_STREAM(v);
     SQInteger offset, origin = SQ_SEEK_SET;
@@ -302,21 +301,21 @@ SQInteger _stream_seek(HSQUIRRELVM v)
     return 1;
 }
 
-SQInteger _stream_tell(HSQUIRRELVM v)
+static SQInteger _stream_tell(HSQUIRRELVM v)
 {
     SETUP_STREAM(v);
     sq_pushinteger(v, self->Tell());
     return 1;
 }
 
-SQInteger _stream_len(HSQUIRRELVM v)
+static SQInteger _stream_len(HSQUIRRELVM v)
 {
     SETUP_STREAM(v);
     sq_pushinteger(v, self->Len());
     return 1;
 }
 
-SQInteger _stream_flush(HSQUIRRELVM v)
+static SQInteger _stream_flush(HSQUIRRELVM v)
 {
     SETUP_STREAM(v);
     if(!self->Flush())
@@ -326,7 +325,7 @@ SQInteger _stream_flush(HSQUIRRELVM v)
     return 1;
 }
 
-SQInteger _stream_eos(HSQUIRRELVM v)
+static SQInteger _stream_eos(HSQUIRRELVM v)
 {
     SETUP_STREAM(v);
     if(self->EOS())
@@ -343,10 +342,12 @@ static SQInteger _stream_close(HSQUIRRELVM v)
     return 1;
 }
 
-SQInteger _stream__cloned(HSQUIRRELVM v)
+static SQInteger _stream__cloned(HSQUIRRELVM v)
 {
 	 return sq_throwerror(v,_SC("this object cannot be cloned"));
 }
+
+#define _DECL_STREAM_FUNC(name,nparams,typecheck) {_SC(#name),_stream_##name,nparams,typecheck}
 
 static const SQRegFunction _stream_methods[] = {
     _DECL_STREAM_FUNC(readblob,2,_SC("xn")),
