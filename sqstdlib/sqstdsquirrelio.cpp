@@ -15,20 +15,6 @@ static SQInteger _sqstd_SQLEXREADFUNC(SQUserPointer user)
 	return 0;
 }
 
-static SQInteger _sqstd_SQWRITEFUNC(SQUserPointer user,SQUserPointer buf,SQInteger size)
-{
-	SQFILE s = (SQFILE)user;
-    return sqstd_fwrite( buf, size, s);
-}
-
-static SQInteger _sqstd_SQREADFUNC(SQUserPointer user,SQUserPointer buf,SQInteger size)
-{
-	SQFILE s = (SQFILE)user;
-    SQInteger ret;
-    if( (ret = sqstd_fread( buf, size, s))!=0 ) return ret;
-    return -1;
-}
-
 SQRESULT sqstd_compilestream(HSQUIRRELVM v,SQFILE stream,const SQChar *sourcename,SQBool raiseerror)
 {
 	return sq_compile(v,_sqstd_SQLEXREADFUNC,(SQUserPointer)stream,sourcename,raiseerror);
@@ -36,12 +22,12 @@ SQRESULT sqstd_compilestream(HSQUIRRELVM v,SQFILE stream,const SQChar *sourcenam
 
 SQRESULT sqstd_writeclosurestream(HSQUIRRELVM vm,SQFILE stream)
 {
-	return sq_writeclosure(vm,_sqstd_SQWRITEFUNC,(SQUserPointer)stream);
+	return sq_writeclosure(vm,sqstd_FILEWRITEFUNC,(SQUserPointer)stream);
 }
 
 SQRESULT sqstd_readclosurestream(HSQUIRRELVM vm,SQFILE stream)
 {
-	return sq_readclosure(vm,_sqstd_SQREADFUNC,(SQUserPointer)stream);
+	return sq_readclosure(vm,sqstd_FILEREADFUNC,(SQUserPointer)stream);
 }
 
 SQRESULT sqstd_loadstream(HSQUIRRELVM v,SQFILE stream,const SQChar *filename,SQBool printerror,SQInteger buf_size,const SQChar *encoding,SQBool guess)

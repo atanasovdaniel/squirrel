@@ -50,6 +50,9 @@ SQUIRREL_API SQInteger sqstd_feof(SQFILE);
 SQUIRREL_API SQInteger sqstd_fclose(SQFILE);
 SQUIRREL_API void sqstd_frelease(SQFILE);
 
+SQInteger sqstd_FILEWRITEFUNC(SQUserPointer user,SQUserPointer buf,SQInteger size);
+SQInteger sqstd_FILEREADFUNC(SQUserPointer user,SQUserPointer buf,SQInteger size);
+
 SQUIRREL_API SQInteger __sqstd_stream_releasehook(SQUserPointer p, SQInteger SQ_UNUSED_ARG(size));
 
 SQUIRREL_API SQFILE sqstd_fopen(const SQChar *,const SQChar *);

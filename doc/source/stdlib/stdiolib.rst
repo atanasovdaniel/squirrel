@@ -309,7 +309,7 @@ The stream class
 
     The stream object is represented by opaque structure SQFILE.
 
-.. c:function:: SQInteger sqstd_fread(void* buffer, SQInteger size, SQFILE file)
+.. c:function:: SQInteger sqstd_fread(SQUserPointer buffer, SQInteger size, SQFILE file)
 
     :param void* buffer: buffer to read to
     :param SQInteger size: size in bytes to read from the stream
@@ -318,7 +318,7 @@ The stream class
     
     Reads `size` bytes from `stream` and stores them to `buffer`.
 	
-.. c:function:: SQInteger sqstd_fwrite(const SQUserPointer buffer, SQInteger size, SQFILE stream)
+.. c:function:: SQInteger sqstd_fwrite(SQUserPointer buffer, SQInteger size, SQFILE stream)
 
     :param const void* buffer: buffer with data to be writen
     :param SQInteger size: size in bytes to write from to stream

@@ -66,6 +66,21 @@ SQInteger __sqstd_stream_releasehook(SQUserPointer p, SQInteger SQ_UNUSED_ARG(si
     return 1;
 }
 
+SQInteger sqstd_FILEWRITEFUNC(SQUserPointer user,SQUserPointer buf,SQInteger size)
+{
+	SQFILE s = (SQFILE)user;
+    return sqstd_fwrite( buf, size, s);
+}
+
+SQInteger sqstd_FILEREADFUNC(SQUserPointer user,SQUserPointer buf,SQInteger size)
+{
+	SQFILE s = (SQFILE)user;
+    SQInteger ret;
+    if( (ret = sqstd_fread( buf, size, s))!=0 ) return ret;
+    return -1;
+}
+
+
 #define SETUP_STREAM(v) \
     SQStream *self = NULL; \
     if(SQ_FAILED(sq_getinstanceup(v,1,(SQUserPointer*)&self,(SQUserPointer)((SQUnsignedInteger)SQSTD_STREAM_TYPE_TAG)))) \
