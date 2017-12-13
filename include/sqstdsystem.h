@@ -6,6 +6,8 @@
 extern "C" {
 #endif
 
+SQUIRREL_API SQInteger sqstd_system_getenv(HSQUIRRELVM v);
+
 SQUIRREL_API SQInteger sqstd_register_systemlib(HSQUIRRELVM v);
 
 #ifdef __cplusplus

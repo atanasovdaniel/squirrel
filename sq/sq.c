@@ -12,6 +12,7 @@
 #include <squirrel.h>
 #include <sqstdblob.h>
 #include <sqstdsystem.h>
+#include <sqstdpackage.h>
 #include <sqstdio.h>
 #include <sqstdstreamreader.h>
 #include <sqstdtextio.h>
@@ -318,6 +319,7 @@ int main(int argc, char* argv[])
 
     sq_pushroottable(v);
 
+    sqstd_register_package(v);
     sqstd_register_streamlib(v);
     sqstd_register_bloblib(v);
     sqstd_register_iolib(v);

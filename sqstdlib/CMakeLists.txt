@@ -2,6 +2,7 @@ set(SQSTDLIB_SRC sqstdaux.cpp
                  sqstdblob.cpp
                  sqstdio.cpp
                  sqstdmath.cpp
+                 sqstdpackage.cpp
                  sqstdrex.cpp
                  sqstdsquirrelio.cpp
                  sqstdstream.cpp

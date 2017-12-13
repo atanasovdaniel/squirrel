@@ -21,16 +21,19 @@
 #define screname rename
 #endif
 
-static SQInteger _system_getenv(HSQUIRRELVM v)
+SQInteger sqstd_system_getenv(HSQUIRRELVM v)
 {
-    const SQChar *s;
-    if(SQ_SUCCEEDED(sq_getstring(v,2,&s))){
-        sq_pushstring(v,scgetenv(s),-1);
+    const SQChar *s = 0;
+    if(SQ_SUCCEEDED(sq_getstring(v,-1,&s))){    // name
+        const SQChar *e = scgetenv(s);
+        sq_poptop(v);                           // [name]
+        sq_pushstring(v,e,-1);                  // value
         return 1;
     }
-    return 0;
+    return sq_throwerror(v,_SC("wrong param"));
 }
 
+#define _system_getenv sqstd_system_getenv
 
 static SQInteger _system_system(HSQUIRRELVM v)
 {
