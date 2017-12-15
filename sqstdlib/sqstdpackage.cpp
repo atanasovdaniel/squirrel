@@ -236,11 +236,27 @@ static SQInteger require( HSQUIRRELVM v, SQInteger idx)
     }
 }
 
-// SQRESULT sqstd_package_register( HSQUIRRELVM v, const SQChar *package, SQFUNCTION fct)
-// {
-//     //...
-//     return SQ_OK;
-// }
+SQRESULT sqstd_require_fct( HSQUIRRELVM v, const SQChar *package, SQFUNCTION fct)
+{
+    sq_pushregistrytable(v);                            // registry
+    sq_pushstring(v, LOADED_TABLE_NAME, -1);            // registry, "_LOADED"
+    if(SQ_FAILED(sq_rawget(v,-2))) return SQ_ERROR;     // registry, loaded_table
+    sq_remove(v,-2);                                    // [registry], loaded_table
+	sq_newclosure(v,fct,0);                             // loaded_table, fct
+    sq_pushroottable(v);                                // loaded_table, fct, root
+    if(SQ_SUCCEEDED(sq_call(v,1,SQTrue,SQTrue))) {      // loaded_table, fct, [root], package
+        sq_remove(v,-2);                                // loaded_table, [fct], package
+        sq_pushstring(v,package,-1);                    // loaded_table, package, package_name
+        sq_push(v,-2);                                  // loaded_table, package, package_name, package
+        sq_rawset(v,-4);                                // loaded_table, package, [package_name, package]
+        sq_remove(v,-2);                                // [loaded_table], package
+        return 1;                                       // package
+    }
+    else {
+        sq_pop(v,2);                                    // [loaded_table, fct]
+        return SQ_ERROR;                                //
+    }
+}
 
 SQRESULT sqstd_require(HSQUIRRELVM v, const SQChar *package)
 {
@@ -303,44 +319,59 @@ static const SQRegFunction package_funcs[]={
     {NULL,(SQFUNCTION)0,0,NULL}
 };
 
-SQInteger sqstd_load_package(HSQUIRRELVM v)
+SQRESULT sqstd_register_packagelib(HSQUIRRELVM v)
 {
-    sq_pushregistrytable(v);                // registry
-    sq_pushstring(v,LOADED_TABLE_NAME,-1);  // registry, "_LOADED"
-    sq_newtable(v);                         // registry, "_LOADED", table
-    sq_rawset(v,-3);                        // registry, ["_LOADED", table]
+    sq_pushregistrytable(v);                    // registry
+    // package = {...}
+    sq_newtable(v);                             // registry, package
+    sqstd_registerfunctions(v, package_funcs);  // registry, package
     
-    sq_pushstring(v,PATH_VAR_NAME,-1);      // registry, "_PATH"
-    sq_pushstring(v,SQ_PACKAGE_PATH_ENV,-1);     // registry, "_PATH", "SQ_PATH"
-    sqstd_system_getenv(v);                 // registry, "_PATH", "SQ_PATH"
-    if( sq_gettype(v,-1) == OT_NULL) {      // registry, "_PATH", path_value
-        sq_poptop(v);                       // registry, "_PATH", [path_value]
-        sq_pushstring(v,SQ_PACKAGE_DEFAULT_PATH,-1); // registry, "_PATH", def_path_value
-    }
-    sq_rawset(v,-3);                        // registry, ["_PATH", path_value]
+    sq_pushstring(v,LOADED_TABLE_NAME,-1);      // registry, package, "_LOADED"
+    // _LOADED = {}
+    sq_newtable(v);                             // registry, package, "_LOADED", loaded_table
+    // _LOADED["package"] <- package
+    sq_pushstring(v,_SC("package"),-1);         // registry, package, "_LOADED", loaded_table, "package"
+    sq_push(v,-4);                              // registry, package, "_LOADED", loaded_table, "package", package
+    sq_rawset(v,-3);                            // registry, package, "_LOADED", loaded_table, ["package", package]
+    // package.LOADED <- _LOADED
+//    sq_push(v,-2);                              // registry, package, "_LOADED", loaded_table, "_LOADED"
+    sq_pushstring(v,_SC("LOADED"),-1);          // registry, package, "_LOADED", loaded_table, "LOADED"
+    sq_push(v,-2);                              // registry, package, "_LOADED", loaded_table, "LOADED", loaded_table
+    sq_rawset(v,-5);                            // registry, package, "_LOADED", loaded_table, ["LOADED", loaded_table]
+    // registry._LOADED <- _LOADED
+    sq_rawset(v,-4);                            // registry, package, ["_LOADED", loaded_table]
     
-    sq_pushstring(v,CPATH_VAR_NAME,-1);     // registry, "_CPATH"
-    sq_pushstring(v,SQ_PACKAGE_CPATH_ENV,-1);    // registry, "_CPATH", "SQ_CPATH"
-    sqstd_system_getenv(v);                 // registry, "_CPATH", "SQ_PATH"
-    if( sq_gettype(v,-1) == OT_NULL) {      // registry, "_CPATH", cpath_value
-        sq_poptop(v);                       // registry, "_CPATH", [cpath_value]
-        sq_pushstring(v,SQ_PACKAGE_DEFAULT_CPATH,-1); // registry, "_CPATH", def_cpath_value
+    sq_pushstring(v,PATH_VAR_NAME,-1);          // registry, package, "_PATH"
+    sq_pushstring(v,SQ_PACKAGE_PATH_ENV,-1);    // registry, package, "_PATH", "SQ_PATH"
+    sqstd_system_getenv(v);                     // registry, package, "_PATH", "SQ_PATH"
+    if( sq_gettype(v,-1) == OT_NULL) {          // registry, package, "_PATH", path_value
+        sq_poptop(v);                           // registry, package, "_PATH", [path_value]
+        sq_pushstring(v,SQ_PACKAGE_DEFAULT_PATH,-1); // registry, package, "_PATH", def_path_value
     }
-    sq_rawset(v,-3);                        // registry, ["_CPATH", cpath_value]
-    sq_poptop(v);                           // [registry]
-        
+//    sq_push(v,-2);                              // registry, package, "_PATH", path_value, "_PATH"
+    sq_pushstring(v,_SC("PATH"),-1);            // registry, package, "_PATH", path_value, "PATH"
+    sq_push(v,-2);                              // registry, package, "_PATH", path_value, "PATH", path_value
+    // package.PATH <- path_value
+    sq_rawset(v,-5);                            // registry, package, "_PATH", path_value, ["PATH", path_value]
+    // registry._PATH <- path_value
+    sq_rawset(v,-4);                            // registry, package, ["_PATH", path_value]
+    
+    sq_pushstring(v,CPATH_VAR_NAME,-1);         // registry, package, "_CPATH"
+    sq_pushstring(v,SQ_PACKAGE_CPATH_ENV,-1);   // registry, package, "_CPATH", "SQ_CPATH"
+    sqstd_system_getenv(v);                     // registry, package, "_CPATH", "SQ_PATH"
+    if( sq_gettype(v,-1) == OT_NULL) {          // registry, package, "_CPATH", cpath_value
+        sq_poptop(v);                           // registry, package, "_CPATH", [cpath_value]
+        sq_pushstring(v,SQ_PACKAGE_DEFAULT_CPATH,-1); // registry, package, "_CPATH", def_cpath_value
+    }
+//    sq_push(v,-2);                              // registry, package, "_CPATH", cpath_value, "_CPATH"
+    sq_pushstring(v,_SC("CPATH"),-1);           // registry, package, "_CPATH", path_value, "CPATH"
+    sq_push(v,-2);                              // registry, package, "_CPATH", cpath_value, "CPATH", cpath_value
+    // package._CPATH <- path_value
+    sq_rawset(v,-5);                            // registry, package, "_CPATH", cpath_value, ["CPATH", def_path_value]
+    // registry._CPATH <- path_value
+    sq_rawset(v,-4);                            // registry, package, ["_CPATH", cpath_value]
+    
+    sq_pop(v,2);                                // [registry, package]
 	sqstd_registerfunctions(v, g_package_funcs);
-    sqstd_registerfunctions(v, package_funcs);
-    
-    sq_newtable(v);
-//    sqstd_registerfunctions(v, package_funcs);
-    
-    return 1;
-}
-
-SQRESULT sqstd_register_package(HSQUIRRELVM v)
-{
-    sqstd_load_package(v);
-    sq_poptop(v);
     return SQ_OK;
 }

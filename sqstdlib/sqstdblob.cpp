@@ -240,7 +240,6 @@ const SQRegClass _std_blob_decl = {
     _SC("blob"),		// name
 	NULL,				// members
 	_blob_methods,		// methods
-	bloblib_funcs,		// globals
 };
 
 SQRESULT sqstd_getblob(HSQUIRRELVM v,SQInteger idx,SQUserPointer *ptr)
@@ -282,11 +281,12 @@ SQUserPointer sqstd_createblob(HSQUIRRELVM v, SQInteger size)
 
 SQRESULT sqstd_register_bloblib(HSQUIRRELVM v)
 {
-	if(SQ_SUCCEEDED(sqstd_registerclass(v,&_std_blob_decl)))
-	{
-		sq_poptop(v);
-		return SQ_OK;
-	}
-	return SQ_ERROR;
+    if(SQ_FAILED(sqstd_registerclass(v,&_std_blob_decl))) {
+        return SQ_ERROR;
+    }
+	sq_poptop(v);
+    if(SQ_FAILED(sqstd_registerfunctions(v,bloblib_funcs))) {
+        return SQ_ERROR;
+    }
+	return SQ_OK;
 }
-

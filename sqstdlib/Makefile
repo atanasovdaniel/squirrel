@@ -11,7 +11,7 @@ OBJS= \
 	sqstdio.o \
 	sqstdstream.o \
 	sqstdsquirrelio.o \
-	sqstdstreamreader.o \
+	sqstdstreamio.o \
 	sqstdtextio.o \
 	sqstdmath.o \
 	sqstdsystem.o \
@@ -24,7 +24,7 @@ SRCS= \
 	sqstdio.cpp \
 	sqstdstream.cpp \
 	sqstdsquirrelio.cpp \
-	sqstdstreamreader.cpp \
+	sqstdstreamio.cpp \
 	sqstdtextio.cpp \
 	sqstdmath.cpp \
 	sqstdsystem.cpp \

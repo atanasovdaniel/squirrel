@@ -1,5 +1,6 @@
 /* see copyright notice in squirrel.h */
 #include <squirrel.h>
+#include <sqstdpackage.h>
 #include <time.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -134,8 +135,18 @@ static const SQRegFunction systemlib_funcs[]={
 };
 #undef _DECL_FUNC
 
-SQInteger sqstd_register_systemlib(HSQUIRRELVM v)
+SQInteger sqstd_load_system(HSQUIRRELVM v)
 {
+    sq_newtable(v);
 	sqstd_registerfunctions(v,systemlib_funcs);
     return 1;
+}
+
+SQInteger sqstd_register_systemlib(HSQUIRRELVM v)
+{
+    if(SQ_SUCCEEDED(sqstd_require_fct(v,_SC("system"),sqstd_load_system))) {
+        sq_poptop(v);
+        return SQ_OK;
+    }
+    return SQ_ERROR;
 }

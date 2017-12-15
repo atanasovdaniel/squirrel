@@ -1,6 +1,6 @@
-/*  see copyright notice in sqstdstreamreader.cpp */
-#ifndef _SQSTDSTREAMREADER_H_
-#define _SQSTDSTREAMREADER_H_
+/*  see copyright notice in sqstdstreamio.cpp */
+#ifndef _SQSTDSTREAMIO_H_
+#define _SQSTDSTREAMIO_H_
 
 #ifdef __cplusplus
 extern "C" {
@@ -15,10 +15,10 @@ SQUIRREL_API SQSRDR sqstd_streamreader(SQSTREAM stream,SQBool owns,SQInteger buf
 SQUIRREL_API SQInteger sqstd_srdrmark(SQSRDR srdr,SQInteger readAheadLimit);
 SQUIRREL_API SQInteger sqstd_srdrreset(SQSRDR srdr);
 
-SQUIRREL_API SQRESULT sqstd_register_streamreaderlib(HSQUIRRELVM v);
+SQUIRREL_API SQRESULT sqstd_register_streamiolib(HSQUIRRELVM v);
 
 #ifdef __cplusplus
 } /*extern "C"*/
 #endif
 
-#endif // _SQSTDSTREAMREADER_H_
+#endif // _SQSTDSTREAMIO_H_

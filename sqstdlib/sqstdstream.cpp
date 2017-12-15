@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <squirrel.h>
+#include <sqstdpackage.h>
 #include <sqstdaux.h>
 #include <sqstdio.h>
 #include <sqstdblob.h>
@@ -391,7 +392,6 @@ const SQRegClass _sqstd_stream_decl = {
     _SC("stream"),		// name
 	NULL,				// members
 	_stream_methods,	// methods
-	NULL,		// globals
 };
 
 // bindings
@@ -446,8 +446,10 @@ static const SQRegFunction streamlib_funcs[]={
     {NULL,(SQFUNCTION)0,0,NULL}
 };
 
-SQRESULT sqstd_register_streamlib(HSQUIRRELVM v)
+SQInteger sqstd_load_stream(HSQUIRRELVM v)
 {
+    sq_newtable(v);
+    
 	if(SQ_FAILED(sqstd_registerclass(v,&_sqstd_stream_decl)))
 	{
 		return SQ_ERROR;
@@ -456,5 +458,14 @@ SQRESULT sqstd_register_streamlib(HSQUIRRELVM v)
     
 	sqstd_registerfunctions(v,streamlib_funcs);
     
-    return SQ_OK;
+    return 1;
+}
+
+SQRESULT sqstd_register_streamlib(HSQUIRRELVM v)
+{
+    if(SQ_SUCCEEDED(sqstd_require_fct(v,_SC("stream"),sqstd_load_stream))) {
+        sq_poptop(v);
+        return SQ_OK;
+    }
+    return SQ_ERROR;
 }

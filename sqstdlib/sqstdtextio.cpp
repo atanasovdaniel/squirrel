@@ -26,9 +26,10 @@ THE SOFTWARE.
 
 #include <new>
 #include <squirrel.h>
+#include <sqstdpackage.h>
 #include <sqstdaux.h>
 #include <sqstdio.h>
-#include <sqstdstreamreader.h>
+#include <sqstdstreamio.h>
 #include <sqstdtextio.h>
 
 #define SQTC_TOOFEW	(-2)
@@ -628,10 +629,9 @@ static const SQRegMember _textreader_members[] = {
 const SQRegClass _sqstd_textreader_decl = {
 	&_sqstd_stream_decl,	// base_class
     _SC("std_textreader"),	// reg_name
-    _SC("textreader"),		// name
+    _SC("reader"),          // name
 	_textreader_members,	// members
 	_textreader_methods,	// methods
-	NULL,				// globals
 };
 
 /* ====================================
@@ -865,18 +865,19 @@ static const SQRegMember _textwriter_members[] = {
 const SQRegClass _sqstd_textwriter_decl = {
 	&_sqstd_stream_decl,	// base_class
     _SC("std_textwriter"),	// reg_name
-    _SC("textwriter"),		// name
+    _SC("writer"),          // name
 	_textwriter_members,	// members
 	_textwriter_methods,	// methods
-	NULL,				// globals
 };
 
 /* ====================================
 		Register
 ==================================== */
 
-SQUIRREL_API SQRESULT sqstd_register_textiolib(HSQUIRRELVM v)
+SQInteger sqstd_load_textio(HSQUIRRELVM v)
 {
+    sq_newtable(v);
+    
 	if(SQ_FAILED(sqstd_registerclass(v,&_sqstd_textreader_decl)))
 	{
 		return SQ_ERROR;
@@ -889,5 +890,15 @@ SQUIRREL_API SQRESULT sqstd_register_textiolib(HSQUIRRELVM v)
 	}
  	sq_poptop(v);
 
-	return SQ_OK;
+	return 1;
 }
+
+SQUIRREL_API SQRESULT sqstd_register_textiolib(HSQUIRRELVM v)
+{
+    if(SQ_SUCCEEDED(sqstd_require_fct(v,_SC("textio"),sqstd_load_textio))) {
+        sq_poptop(v);
+        return SQ_OK;
+    }
+    return SQ_ERROR;
+}
+

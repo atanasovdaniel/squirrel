@@ -3,7 +3,7 @@
 #include <squirrel.h>
 #include <sqstdaux.h>
 #include <sqstdio.h>
-#include <sqstdstreamreader.h>
+#include <sqstdstreamio.h>
 #include <sqstdtextio.h>
 
 #define IO_BUFFER_SIZE 2048

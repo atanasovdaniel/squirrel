@@ -170,7 +170,6 @@ const SQRegClass _sqstd_file_decl = {
     _SC("file"),		// name
 	NULL,				// members
 	_file_methods,		// methods
-	NULL,				// globals
 };
 
 SQRESULT sqstd_createsqfile(HSQUIRRELVM v, SQFILE file,SQBool own)

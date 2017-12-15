@@ -24,9 +24,10 @@ THE SOFTWARE.
 #include <stddef.h>
 #include <string.h>
 #include <squirrel.h>
+#include <sqstdpackage.h>
 #include <sqstdaux.h>
 #include <sqstdstream.h>
-#include <sqstdstreamreader.h>
+#include <sqstdstreamio.h>
 
 static HSQMEMBERHANDLE srdr__stream_handle;
 
@@ -284,18 +285,29 @@ static const SQRegMember _srdr_members[] = {
 
 const SQRegClass _sqstd_streamreader_decl = {
 	&_sqstd_stream_decl,	// base_class
-    _SC("sqt_streamreader"),	// reg_name
-    _SC("streamreader"),		// name
+    _SC("sqstd_streamreader"),	// reg_name
+    _SC("reader"),          // name
 	_srdr_members,			// members
 	_srdr_methods,		// methods
-	NULL,				// globals
 };
 
-SQRESULT sqstd_register_streamreaderlib(HSQUIRRELVM v)
+SQInteger sqstd_load_streamio(HSQUIRRELVM v)
 {
+    sq_newtable(v);
+    
 	if(SQ_FAILED(sqstd_registerclass(v,&_sqstd_streamreader_decl))) {
 		return SQ_ERROR;
 	}
- 	sq_poptop(v);
-	return SQ_OK;
+    sq_poptop(v);
+    
+	return 1;
+}
+
+SQRESULT sqstd_register_streamiolib(HSQUIRRELVM v)
+{
+    if(SQ_SUCCEEDED(sqstd_require_fct(v,_SC("streamio"),sqstd_load_streamio))) {
+        sq_poptop(v);
+        return SQ_OK;
+    }
+    return SQ_ERROR;
 }

@@ -6,7 +6,7 @@ set(SQSTDLIB_SRC sqstdaux.cpp
                  sqstdrex.cpp
                  sqstdsquirrelio.cpp
                  sqstdstream.cpp
-                 sqstdstreamreader.cpp
+                 sqstdstreamio.cpp
                  sqstdstring.cpp
                  sqstdsystem.cpp
                  sqstdtextio.cpp)

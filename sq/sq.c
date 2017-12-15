@@ -14,7 +14,7 @@
 #include <sqstdsystem.h>
 #include <sqstdpackage.h>
 #include <sqstdio.h>
-#include <sqstdstreamreader.h>
+#include <sqstdstreamio.h>
 #include <sqstdtextio.h>
 #include <sqstdmath.h>
 #include <sqstdstring.h>
@@ -319,14 +319,14 @@ int main(int argc, char* argv[])
 
     sq_pushroottable(v);
 
-    sqstd_register_package(v);
+    sqstd_register_packagelib(v);
     sqstd_register_streamlib(v);
     sqstd_register_bloblib(v);
     sqstd_register_iolib(v);
     sqstd_register_systemlib(v);
     sqstd_register_mathlib(v);
     sqstd_register_stringlib(v);
-    sqstd_register_streamreaderlib(v);
+    sqstd_register_streamiolib(v);
     sqstd_register_textiolib(v);
 
     //aux library

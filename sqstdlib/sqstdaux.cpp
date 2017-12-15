@@ -144,6 +144,7 @@ SQInteger sqstd_registerfunctions(HSQUIRRELVM v,const SQRegFunction *fcts)
 			sq_pushstring(v,f->name,-1);				// table, method_name
 			sq_newclosure(v,f->f,0);					// table, method_name, method_fct
 			sq_setparamscheck(v,f->nparamscheck,typemask);
+            sq_setnativeclosurename(v,-1,f->name);
 			sq_newslot(v,-3,bstatic);					// table
 			f++;
 		}
@@ -181,42 +182,37 @@ SQInteger sqstd_registermembers(HSQUIRRELVM v,const SQRegMember *membs)
 }
 
 SQInteger sqstd_registerclass(HSQUIRRELVM v,const SQRegClass *decl)
-{															// root
-    sq_pushregistrytable(v);								// root, registry
-    sq_pushstring(v,decl->reg_name,-1);						// root, registry, reg_name
+{															// table
+    sq_pushregistrytable(v);								// table, registry
+    sq_pushstring(v,decl->reg_name,-1);						// table, registry, reg_name
     if(SQ_FAILED(sq_get(v,-2))) {
-															// root, registry
-        sq_pop(v,1);										// root
+															// table, registry
+        sq_pop(v,1);										// table
 		if( decl->base_class != 0) {
-			sqstd_registerclass(v,decl->base_class);			// root, base_class
-			sq_newclass(v,SQTrue);							// root, new_class
+			sqstd_registerclass(v,decl->base_class);		// table, base_class
+			sq_newclass(v,SQTrue);							// table, new_class
 		}
 		else {
-			sq_newclass(v,SQFalse);							// root, new_class
+			sq_newclass(v,SQFalse);							// table, new_class
 		}
         sq_settypetag(v,-1,(SQUserPointer)(SQHash)decl);
 		sqstd_registermembers(v,decl->members);
 		sqstd_registerfunctions(v,decl->methods);
 		
-		sq_pushregistrytable(v);							// root, new_class, registry
-		sq_pushstring(v,decl->reg_name,-1);					// root, new_class, registry, reg_name
-		sq_push(v,-3);										// root, new_class, registry, reg_name, new_class
-        sq_newslot(v,-3,SQFalse);							// root, new_class, registry
-        sq_poptop(v);                                       // root, new_class
+		sq_pushregistrytable(v);							// table, new_class, registry
+		sq_pushstring(v,decl->reg_name,-1);					// table, new_class, registry, reg_name
+		sq_push(v,-3);										// table, new_class, registry, reg_name, new_class
+        sq_newslot(v,-3,SQFalse);							// table, new_class, registry
+        sq_poptop(v);                                       // table, new_class
 		if( decl->name != 0) {
-			sq_pushstring(v,decl->name,-1);					// root, new_class, class_name
-			sq_push(v,-2);									// root, new_class, class_name, new_class
-			sq_newslot(v,-4,SQFalse);						// root, new_class
-		}
-		if( decl->globals) {
-			sq_push(v,-2);									// root, new_class, root
-			sqstd_registerfunctions(v,decl->globals);
-			sq_poptop(v);									// root, new_class
+			sq_pushstring(v,decl->name,-1);					// table, new_class, class_name
+			sq_push(v,-2);									// table, new_class, class_name, new_class
+			sq_newslot(v,-4,SQFalse);						// table, new_class
 		}
     }
     else {
-															// root, registry, reg_class
-		sq_remove(v,-2);									// root, reg_class
+															// table, registry, reg_class
+		sq_remove(v,-2);									// table, reg_class
     }
     return SQ_OK;
 }

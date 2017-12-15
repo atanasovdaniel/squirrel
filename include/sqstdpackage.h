@@ -5,7 +5,10 @@
 extern "C" {
 #endif
 
-SQUIRREL_API SQRESULT sqstd_register_package(HSQUIRRELVM v);
+SQUIRREL_API SQRESULT sqstd_require(HSQUIRRELVM v, const SQChar *package);
+SQUIRREL_API SQRESULT sqstd_require_fct( HSQUIRRELVM v, const SQChar *package, SQFUNCTION fct);
+
+SQUIRREL_API SQRESULT sqstd_register_packagelib(HSQUIRRELVM v);
 
 #ifdef __cplusplus
 }

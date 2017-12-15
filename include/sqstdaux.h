@@ -20,7 +20,6 @@ typedef struct tagSQRegClass {
     const SQChar *name;
     const SQRegMember *members;
 	const SQRegFunction	*methods;
-	const SQRegFunction	*globals;
 } SQRegClass;
 
 SQUIRREL_API SQInteger sqstd_registerclass(HSQUIRRELVM v,const SQRegClass *decl);
