@@ -13,7 +13,7 @@ set(SQSTDLIB_SRC sqstdaux.cpp
 
 if(NOT DEFINED DISABLE_DYNAMIC)
   add_library(sqstdlib SHARED ${SQSTDLIB_SRC})
-  target_link_libraries(sqstdlib squirrel)
+  target_link_libraries(sqstdlib squirrel ${CMAKE_DL_LIBS})
   if(NOT DEFINED SQ_DISABLE_INSTALLER)
     install(TARGETS sqstdlib RUNTIME DESTINATION ${INSTALL_BIN_DIR}
                              LIBRARY DESTINATION ${INSTALL_LIB_DIR}
@@ -23,6 +23,7 @@ endif()
 
 if(NOT DEFINED DISABLE_STATIC)
   add_library(sqstdlib_static STATIC ${SQSTDLIB_SRC})
+  target_link_libraries(sqstdlib_static ${CMAKE_DL_LIBS})
   if(NOT DEFINED SQ_DISABLE_INSTALLER)
     install(TARGETS sqstdlib_static ARCHIVE DESTINATION ${INSTALL_LIB_DIR})
   endif()
@@ -37,3 +38,4 @@ if(DEFINED LONG_OUTPUT_NAMES)
     set_target_properties(sqstdlib_static PROPERTIES OUTPUT_NAME sqstdlib3_static)
   endif()
 endif()
+
