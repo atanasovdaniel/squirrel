@@ -29,7 +29,14 @@ THE SOFTWARE.
 #include <stdio.h>          // !!! debug
 
 #define SQ_PACKAGE_DEFAULT_PATH     _SC("./?.nut;./?/init.nut")
-#define SQ_PACKAGE_DEFAULT_CPATH    _SC("")
+
+#ifdef _WIN32
+#define SQ_PACKAGE_DEFAULT_CPATH    _SC(".\\?.dll")
+#else // _WIN32
+#define SQ_PACKAGE_DEFAULT_CPATH    _SC("./?.so")
+#endif // _WIN32
+
+#define LOAD_FCT_TEMPLATE           _SC("sqload_?")
 
 #define SQ_PACKAGE_PATH_ENV         _SC("SQ_PATH")
 #define SQ_PACKAGE_CPATH_ENV        _SC("SQ_CPATH")
@@ -44,7 +51,7 @@ THE SOFTWARE.
 #define PATH_REPLACE_CHAR   _SC('?')
 
 #define LOADED_TABLE_NAME   _SC("_PACKAGE_LOADED")
-#define CLOADED_TABLE_NAME _SC("_PACKAGE_CLOADED")
+#define CLOADED_TABLE_NAME  _SC("_PACKAGE_CLOADED")
 #define PATH_VAR_NAME       _SC("_PACKAGE_PATH")
 #define CPATH_VAR_NAME      _SC("_PACKAGE_CPATH")
 #define CCHAIN_VAR_NAME     _SC("_PACKAGE_CCHAIN")
@@ -210,7 +217,7 @@ static SQRESULT add_to_chain(HSQUIRRELVM v, DL_LIB lib, const SQChar *path)
     return r;
 }
 
-static SQRESULT dynlib_load(HSQUIRRELVM v, const SQChar *path, SQBool is_private)
+static SQRESULT dynlib_load(HSQUIRRELVM v, DL_LIB *plib, const SQChar *path, SQBool is_private)
 {
     DL_LIB lib = 0;
     if(!is_private) {
@@ -223,7 +230,8 @@ static SQRESULT dynlib_load(HSQUIRRELVM v, const SQChar *path, SQBool is_private
         sq_remove(v,-2);                                // [registry], cloaded_table
         sq_pushstring(v,path,-1);                       // cloaded_table, path
         if(SQ_SUCCEEDED(sq_rawget(v,-2))) {             // cloaded_table, [path]
-            sq_remove(v,-2);                            // [cloaded_table], up_library
+            sq_getuserpointer(v,-1,(SQUserPointer*)plib);
+            sq_pop(v,2);                                // [cloaded_table, up_library]
             return SQ_OK;
         }
         else {
@@ -234,7 +242,7 @@ static SQRESULT dynlib_load(HSQUIRRELVM v, const SQChar *path, SQBool is_private
     if(!is_private) {
         if(SQ_FAILED(add_to_chain(v,lib,path))) return SQ_ERROR;
     }
-    sq_pushuserpointer(v,lib);                          // up_library
+    *plib = lib;
     return SQ_OK;
 }
 
@@ -253,7 +261,7 @@ static SQInteger find_symbol(HSQUIRRELVM v,DL_LIB lib)
     else {
         sq_poptop(v);                   // [sym_name]
         _dllib_error(v);                // error
-        return sq_throwobject(v);
+        return sq_throwobject(v);       //
     }
 }
 
@@ -264,7 +272,7 @@ static SQInteger find_symbol(HSQUIRRELVM v,DL_LIB lib)
 
 static SQInteger _dynlib_constructor(HSQUIRRELVM v)
 {
-    SQUserPointer lib;
+    DL_LIB lib;
     const SQChar *path;
     SQBool is_private = SQFalse;
     if( sq_gettop(v) > 2) {
@@ -272,10 +280,8 @@ static SQInteger _dynlib_constructor(HSQUIRRELVM v)
         sq_settop(v,2);
     }
     sq_getstring(v,2,&path);
-    if(SQ_FAILED(dynlib_load(v,path,is_private))) return SQ_ERROR;
-    sq_getuserpointer(v,-1,&lib);
-    sq_poptop(v);
-    if(SQ_FAILED(sq_setinstanceup(v,1,lib))) {
+    if(SQ_FAILED(dynlib_load(v,&lib,path,is_private))) return SQ_ERROR;
+    if(SQ_FAILED(sq_setinstanceup(v,1,(SQUserPointer)lib))) {
         return sq_throwerror(v, _SC("cannot create dynlib instance"));
     }
     sq_pushstring(v,path,-1);
@@ -446,10 +452,30 @@ struct GetStrElems
     }
 };
 
+static SQFILE search_path(HSQUIRRELVM v)
+{
+    GetStrElems els(v, -1, PATH_SEP_CHAR);              // path_to_search
+    while( els.push_next(v))                            // path_to_search, filename
+    {
+        const SQChar *filename;
+        sq_getstring(v,-1,&filename);
+printf("Try:%s\n",filename);
+        SQFILE file = sqstd_fopen(filename,_SC("rb"));
+        if( file) {
+            sq_remove(v,-2);                            // [path_to_search], filename
+            return file;                                // filename
+        }
+        sq_poptop(v);                                   // path_to_search, [filename]
+    }
+    sq_poptop(v);                                       // [path_to_search]
+    return 0;                                           //
+}
+
 static const SQChar _dots_repl[2] = { DIR_SEP_CHAR, _SC('\0') };
 
 static SQRESULT search_package_nut( HSQUIRRELVM v, SQInteger idx)
 {
+    SQFILE file;
     sq_pushregistrytable(v);                            // registry
     sq_pushstring(v, PATH_VAR_NAME, -1);                // registry, "_PATH"
     if(SQ_FAILED(sq_rawget(v,-2))) {                    // registry, path_var
@@ -461,35 +487,90 @@ static SQRESULT search_package_nut( HSQUIRRELVM v, SQInteger idx)
     sq_pushstring(v,_dots_repl,-1);                     // path, pkg_name, dots_repl
     replace_char(v, _SC('.'));                          // path, search_name
     replace_char(v, PATH_REPLACE_CHAR);                 // path_to_search
-    GetStrElems els(v, -1, PATH_SEP_CHAR);
-    while( els.push_next(v))                            // path_to_search, filename
-    {
+    file = search_path(v);
+    if( file) {                                         // filename
         const SQChar *filename;
+        SQRESULT r;
         sq_getstring(v,-1,&filename);
-//printf("[[%s]]",filename);
-        SQFILE file = sqstd_fopen(filename,_SC("rb"));
-        if( file) {
-            SQRESULT r = sqstd_loadstream(v,file,filename,SQTrue);
-            sqstd_fclose( file);
-            if(SQ_FAILED(r)) {
-                sq_pop(v,2);                            // [path_to_search, filename]
-                return sq_throwerror(v,_SC("failed to load package"));  //
-            }
-            sq_remove(v,-2);                            // path_to_search, [filename], closure
-            sq_remove(v,-2);                            // [path_to_search], closure
-            return 1;                                   // closure
+        r = sqstd_loadstream(v,file,filename,SQTrue);
+        sqstd_fclose( file);
+        if(SQ_FAILED(r)) {
+            sq_poptop(v);                               // [path_to_search, filename]
+            return sq_throwerror(v,_SC("failed to load package"));  //
         }
-        sq_poptop(v);                                   // path_to_search, [filename]
+        sq_remove(v,-2);                                // [filename], closure
+        return 1;
     }
-    sq_poptop(v);                                       // [path_to_search]
-    return 0;                                           //
+    return 0;
 }
+
+static SQRESULT search_package_c( HSQUIRRELVM v, SQInteger idx)
+{
+    SQFILE file;
+    const SQChar *pkg_name;
+    SQInteger pkg_dot;
+    sq_pushregistrytable(v);                            // registry
+    sq_pushstring(v, CPATH_VAR_NAME, -1);               // registry, "_CPATH"
+    if(SQ_FAILED(sq_rawget(v,-2))) {                    // registry, cpath_var
+        sq_poptop(v);                                   // [registry]
+        return SQ_ERROR;                                //
+    }
+    sq_remove(v,-2);                                    // [registry], cpath
+    sq_getstringandsize(v,idx,&pkg_name,&pkg_dot);
+    while((pkg_dot > 0) && (pkg_name[pkg_dot] != _SC('.'))) pkg_dot--;
+    sq_push(v,-1);                                      // cpath, cpath
+    // first "aa.bb.cc" --> search file "aa.bb.cc" for symbol "cc"
+    sq_push(v,idx);                                     // cpath, cpath, pkg_name
+    sq_pushstring(v,_dots_repl,-1);                     // cpath, cpath, pkg_name, dots_repl
+    replace_char(v, _SC('.'));                          // cpath, cpath, search_name
+    replace_char(v, PATH_REPLACE_CHAR);                 // cpath, path_to_search
+    file = search_path(v);
+    if( file) { sq_remove(v,-2); }                      // [cpath], filename
+    if( (file == 0) && (pkg_dot)) {
+        // second "aa.bb.cc" --> search file "aa.bb" for symbol "cc"
+        sq_pushstring(v, pkg_name, pkg_dot);            // cpath, pkg_name
+        sq_pushstring(v,_dots_repl,-1);                 // cpath, pkg_name, dots_repl
+        replace_char(v, _SC('.'));                      // cpath, search_name
+        replace_char(v, PATH_REPLACE_CHAR);             // path_to_search
+        file = search_path(v);
+    }
+    if( file) {
+        DL_LIB lib;
+        const SQChar *filename;
+        SQUserPointer fct;
+        sqstd_fclose( file);
+        sq_getstring(v,-1,&filename);                   // filename
+        if(SQ_FAILED(dynlib_load(v,&lib,filename,SQFalse))) {
+            sq_poptop(v);                               // [filename]
+            return SQ_ERROR;
+        }
+        sq_poptop(v);                                   // [filename]
+        sq_pushstring(v, LOAD_FCT_TEMPLATE, -1);        // fct_template
+        sq_pushstring(v, pkg_dot ? pkg_name + pkg_dot + 1 : pkg_name, -1); // fct_template, pkg_part
+        replace_char(v, _SC('?'));                      // pkg_fct
+        if(SQ_FAILED(find_symbol(v, lib))) {            // [pkg_fct], up_pkg_fct
+            return SQ_ERROR;
+        }
+        sq_getuserpointer(v,-1,&fct);                   // up_pkg_fct
+        sq_poptop(v);                                   // [up_pkg_fct]
+        sq_newclosure(v,(SQFUNCTION)fct,0);             // closure
+        return 1;
+    }
+    return 0;
+}
+
 
 static SQInteger search_package(HSQUIRRELVM v, SQInteger idx)
 {
     SQRESULT is_found;
+    // first: nut package
     is_found = search_package_nut(v, idx);              //
     if(SQ_FAILED(is_found)) return SQ_ERROR;
+    if( is_found == 0) {
+        // second: c package
+        is_found = search_package_c(v, idx);            //
+        if(SQ_FAILED(is_found)) return SQ_ERROR;
+    }
     if( is_found) {                                     // closure
         // package is found
         sq_pushroottable(v);                            // closure, root

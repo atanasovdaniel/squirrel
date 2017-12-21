@@ -64,8 +64,12 @@ if(DEFINED INSTALL_INC_DIR)
                      include/sqstdblob.h
                      include/sqstdio.h
                      include/sqstdmath.h
+                     include/sqstdpackage.h
+                     include/sqstdstream.h
+                     include/sqstdstreamio.h
                      include/sqstdstring.h
                      include/sqstdsystem.h
+                     include/sqstdtextio.h
                      include/squirrel.h)
   install(FILES ${SQ_PUB_HEADERS} DESTINATION ${INSTALL_INC_DIR})
 endif()
