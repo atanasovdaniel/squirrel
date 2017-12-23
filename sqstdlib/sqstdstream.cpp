@@ -119,7 +119,7 @@ static SQInteger _stream_readline(HSQUIRRELVM v)
 			buf_len += 1024;
 			buf = sq_getscratchpad(v,buf_len);
 		}
-		
+
 		res = self->Read( &c, sizeof(c));
 
 		if( res != sizeof(c))
@@ -131,9 +131,9 @@ static SQInteger _stream_readline(HSQUIRRELVM v)
 				break;
 		}
 	}
-	
+
 	sq_pushstring(v,buf,buf_pos);
-	
+
 	return 1;
 }
 
@@ -449,21 +449,21 @@ static const SQRegFunction streamlib_funcs[]={
 SQInteger sqstd_load_stream(HSQUIRRELVM v)
 {
     sq_newtable(v);
-    
+
 	if(SQ_FAILED(sqstd_registerclass(v,&_sqstd_stream_decl)))
 	{
 		return SQ_ERROR;
 	}
 	sq_poptop(v);
-    
+
 	sqstd_registerfunctions(v,streamlib_funcs);
-    
+
     return 1;
 }
 
 SQRESULT sqstd_register_streamlib(HSQUIRRELVM v)
 {
-    if(SQ_SUCCEEDED(sqstd_require_fct(v,_SC("stream"),sqstd_load_stream))) {
+    if(SQ_SUCCEEDED(sqstd_package_registerfct(v,_SC("stream"),sqstd_load_stream))) {
         sq_poptop(v);
         return SQ_OK;
     }

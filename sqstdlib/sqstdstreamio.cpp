@@ -294,18 +294,18 @@ const SQRegClass _sqstd_streamreader_decl = {
 SQInteger sqstd_load_streamio(HSQUIRRELVM v)
 {
     sq_newtable(v);
-    
+
 	if(SQ_FAILED(sqstd_registerclass(v,&_sqstd_streamreader_decl))) {
 		return SQ_ERROR;
 	}
     sq_poptop(v);
-    
+
 	return 1;
 }
 
 SQRESULT sqstd_register_streamiolib(HSQUIRRELVM v)
 {
-    if(SQ_SUCCEEDED(sqstd_require_fct(v,_SC("streamio"),sqstd_load_streamio))) {
+    if(SQ_SUCCEEDED(sqstd_package_registerfct(v,_SC("streamio"),sqstd_load_streamio))) {
         sq_poptop(v);
         return SQ_OK;
     }

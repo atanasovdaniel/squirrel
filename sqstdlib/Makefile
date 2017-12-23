@@ -14,6 +14,7 @@ OBJS= \
 	sqstdstreamio.o \
 	sqstdtextio.o \
 	sqstdmath.o \
+	sqstdpackage.o \
 	sqstdsystem.o \
 	sqstdstring.o \
 	sqstdaux.o \
@@ -27,6 +28,7 @@ SRCS= \
 	sqstdstreamio.cpp \
 	sqstdtextio.cpp \
 	sqstdmath.cpp \
+	sqstdpackage.cpp \
 	sqstdsystem.cpp \
 	sqstdstring.cpp \
 	sqstdaux.cpp \

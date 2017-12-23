@@ -877,7 +877,7 @@ const SQRegClass _sqstd_textwriter_decl = {
 SQInteger sqstd_load_textio(HSQUIRRELVM v)
 {
     sq_newtable(v);
-    
+
 	if(SQ_FAILED(sqstd_registerclass(v,&_sqstd_textreader_decl)))
 	{
 		return SQ_ERROR;
@@ -895,7 +895,7 @@ SQInteger sqstd_load_textio(HSQUIRRELVM v)
 
 SQUIRREL_API SQRESULT sqstd_register_textiolib(HSQUIRRELVM v)
 {
-    if(SQ_SUCCEEDED(sqstd_require_fct(v,_SC("textio"),sqstd_load_textio))) {
+    if(SQ_SUCCEEDED(sqstd_package_registerfct(v,_SC("textio"),sqstd_load_textio))) {
         sq_poptop(v);
         return SQ_OK;
     }

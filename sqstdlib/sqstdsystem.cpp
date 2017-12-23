@@ -144,7 +144,7 @@ SQInteger sqstd_load_system(HSQUIRRELVM v)
 
 SQInteger sqstd_register_systemlib(HSQUIRRELVM v)
 {
-    if(SQ_SUCCEEDED(sqstd_require_fct(v,_SC("system"),sqstd_load_system))) {
+    if(SQ_SUCCEEDED(sqstd_package_registerfct(v,_SC("system"),sqstd_load_system))) {
         sq_poptop(v);
         return SQ_OK;
     }
