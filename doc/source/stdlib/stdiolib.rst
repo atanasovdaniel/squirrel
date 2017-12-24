@@ -101,9 +101,9 @@ File Object
     
     File must be released by call to sqstd_fclose.
 
-.. c:function:: SQInteger sqstd_fread(void* buffer, SQInteger size, SQInteger count, SQFILE file)
+.. c:function:: SQInteger sqstd_fread(SQUserPointer buffer, SQInteger size, SQInteger count, SQFILE file)
 
-    :param void* buffer: buffer to read to
+    :param SQUserPointer buffer: buffer to read to
     :param SQInteger size: item size
     :param SQInteger count: items count
     :param SQFILE file: the file to read from
@@ -111,9 +111,9 @@ File Object
     
     Reads `count` items of data, each `size` bytes long, from the file `file`, storing them at the location given by `buffer`.
 	
-.. c:function:: SQInteger sqstd_fwrite(const SQUserPointer buffer, SQInteger size, SQInteger count, SQFILE file)
+.. c:function:: SQInteger sqstd_fwrite(SQUserPointer buffer, SQInteger size, SQInteger count, SQFILE file)
 
-    :param const void* buffer: buffer with data to be writen
+    :param SQUserPointer buffer: buffer with data to be writen
     :param SQInteger size: item size
     :param SQInteger count: items count
     :param SQFILE stream: the stream to write to

@@ -26,7 +26,6 @@ THE SOFTWARE.
 #include <sqstdio.h>
 #include <sqstdsystem.h>
 #include <sqstdpackage.h>
-#define _DEBUG
 #ifdef _DEBUG
 #include <stdio.h>
 #endif // _DEBUG
@@ -639,35 +638,6 @@ static SQInteger load_package(HSQUIRRELVM v, SQInteger idx)
     }
 }
 
-//static SQInteger search_package(HSQUIRRELVM v, SQInteger idx)
-//{
-//    SQRESULT is_found;
-//    // first: nut package
-//    is_found = search_package_nut(v, idx);              //
-//    if(SQ_FAILED(is_found)) return SQ_ERROR;
-//    if( is_found == 0) {
-//        // second: c package
-//        is_found = search_package_c(v, idx);            //
-//        if(SQ_FAILED(is_found)) return SQ_ERROR;
-//    }
-//    if( is_found) {                                     // closure
-//        // package is found
-//        sq_pushroottable(v);                            // closure, root
-//        if(SQ_SUCCEEDED(sq_call(v,1,SQTrue,SQTrue))) {  // closure, [root]
-//            sq_remove(v,-2);                            // [closure], package
-//            return 1;                                   // package
-//        }
-//        else {                                          // closure
-//            sq_pop(v,1);                                // [closure]
-//            return sq_throwerror(v,_SC("failed to init package")); //
-//        }
-//    }
-//    else {
-//        // package is not found
-//        return 0;                                       //
-//    }
-//}
-
 /* ----------------
     require
 ---------------- */
@@ -924,42 +894,4 @@ SQRESULT sqstd_register_packagelib(HSQUIRRELVM v)
     sq_poptop(v);                               // [package]
 	sqstd_registerfunctions(v, g_package_funcs);
     return SQ_OK;
-
-//     sq_pushstring(v,PATH_VAR_NAME,-1);          // registry, package, "_PATH"
-//     sq_pushstring(v,SQ_PACKAGE_PATH_ENV,-1);    // registry, package, "_PATH", "SQ_PATH"
-//     sqstd_system_getenv(v);                     // registry, package, "_PATH", "SQ_PATH"
-//     if( sq_gettype(v,-1) == OT_NULL) {          // registry, package, "_PATH", path_value
-//         sq_poptop(v);                           // registry, package, "_PATH", [path_value]
-//         sq_pushstring(v,SQ_PACKAGE_DEFAULT_PATH,-1); // registry, package, "_PATH", def_path_value
-//     }
-//     sq_pushstring(v,_SC("PATH"),-1);            // registry, package, "_PATH", path_value, "PATH"
-//     sq_push(v,-2);                              // registry, package, "_PATH", path_value, "PATH", path_value
-//     // package.PATH <- path_value
-//     sq_rawset(v,-5);                            // registry, package, "_PATH", path_value, ["PATH", path_value]
-//     // registry._PATH <- path_value
-//     sq_rawset(v,-4);                            // registry, package, ["_PATH", path_value]
-//
-//     sq_pushstring(v,CPATH_VAR_NAME,-1);         // registry, package, "_CPATH"
-//     sq_pushstring(v,SQ_PACKAGE_CPATH_ENV,-1);   // registry, package, "_CPATH", "SQ_CPATH"
-//     sqstd_system_getenv(v);                     // registry, package, "_CPATH", "SQ_PATH"
-//     if( sq_gettype(v,-1) == OT_NULL) {          // registry, package, "_CPATH", cpath_value
-//         sq_poptop(v);                           // registry, package, "_CPATH", [cpath_value]
-//         sq_pushstring(v,SQ_PACKAGE_DEFAULT_CPATH,-1); // registry, package, "_CPATH", def_cpath_value
-//     }
-//     sq_pushstring(v,_SC("CPATH"),-1);           // registry, package, "_CPATH", path_value, "CPATH"
-//     sq_push(v,-2);                              // registry, package, "_CPATH", cpath_value, "CPATH", cpath_value
-//     // package._CPATH <- path_value
-//     sq_rawset(v,-5);                            // registry, package, "_CPATH", cpath_value, ["CPATH", def_path_value]
-//     // registry._CPATH <- path_value
-//     sq_rawset(v,-4);                            // registry, package, ["_CPATH", cpath_value]
-//
-// 	if(SQ_FAILED(sqstd_registerclass(v,&_sqstd_dynlib_decl)))
-// 	{
-// 		return SQ_ERROR;
-// 	}
-//  	sq_poptop(v);
-//
-//     sq_pop(v,2);                                // [registry, package]
-// 	sqstd_registerfunctions(v, g_package_funcs);
-//     return SQ_OK;
 }

@@ -37,6 +37,7 @@ THE SOFTWARE.
    stdsystemlib.rst
    stdstringlib.rst
    stdauxlib.rst
-   stdstreamreaderlib.rst
+   stdstreamiolib.rst
    stdtextiolib.rst
+   stdpackagelib.rst
 

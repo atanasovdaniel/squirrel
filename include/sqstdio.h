@@ -17,7 +17,7 @@ typedef void* SQFILE;
 
 SQUIRREL_API SQFILE sqstd_fopen(const SQChar *,const SQChar *);
 SQUIRREL_API SQInteger sqstd_fread(SQUserPointer, SQInteger, SQInteger, SQFILE);
-SQUIRREL_API SQInteger sqstd_fwrite(const SQUserPointer, SQInteger, SQInteger, SQFILE);
+SQUIRREL_API SQInteger sqstd_fwrite(SQUserPointer, SQInteger, SQInteger, SQFILE);
 //SQUIRREL_API SQInteger sqstd_fseek(SQFILE , SQInteger , SQInteger);
 #define sqstd_fseek(_f,_p,_o)   sqstd_sseek((SQSTREAM)(_f),_p,_o)
 //SQUIRREL_API SQInteger sqstd_ftell(SQFILE);
