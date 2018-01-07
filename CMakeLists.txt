@@ -9,8 +9,6 @@ set(CMAKE_BUILD_TYPE "Release" CACHE STRING "")
 
 project(squirrel C CXX)
 
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
-
 if(CMAKE_COMPILER_IS_GNUCXX)
   set(SQ_FLAGS -fno-exceptions -fno-strict-aliasing -Wall -Wextra -pedantic -Wcast-qual)
 
@@ -48,28 +46,30 @@ if(NOT DEFINED SQ_DISABLE_INSTALLER)
   if(NOT DEFINED INSTALL_LIB_DIR)
     set(INSTALL_LIB_DIR lib)
   endif()
+
+  if(NOT DEFINED INSTALL_INC_DIR)
+    set(INSTALL_INC_DIR include)
+  endif()
+
+  if(NOT DEFINED INSTALL_CMAKE_DIR)
+    set(INSTALL_CMAKE_DIR ${INSTALL_LIB_DIR}/cmake)
+  endif()
 endif()
 
 add_subdirectory(squirrel)
-add_subdirectory(sqstdlib)
-add_subdirectory(sq)
+if(NOT DEFINED SQ_DISABLE_SQSTDLIB)
+  add_subdirectory(sqstdlib)
+endif()
+if(NOT DEFINED SQ_DISABLE_SQ)
+  add_subdirectory(sq)
+endif()
+
+if(NOT DEFINED SQ_DISABLE_INSTALLER)
+  if(NOT DEFINED SQ_DISABLE_INSTALLDEV)
+    install(EXPORT squirrel DESTINATION ${INSTALL_CMAKE_DIR})
+  endif()
+endif()
 
 if(NOT WIN32 AND NOT DEFINED DISABLE_DYNAMIC)
   set_target_properties(squirrel sqstdlib PROPERTIES SOVERSION 0 VERSION 0.0.0)
-endif()
-
-if(DEFINED INSTALL_INC_DIR)
-  set(SQ_PUB_HEADERS include/sqconfig.h
-                     include/sqstdaux.h
-                     include/sqstdblob.h
-                     include/sqstdio.h
-                     include/sqstdmath.h
-                     include/sqstdpackage.h
-                     include/sqstdstream.h
-                     include/sqstdstreamio.h
-                     include/sqstdstring.h
-                     include/sqstdsystem.h
-                     include/sqstdtextio.h
-                     include/squirrel.h)
-  install(FILES ${SQ_PUB_HEADERS} DESTINATION ${INSTALL_INC_DIR})
 endif()
