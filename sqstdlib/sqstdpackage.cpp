@@ -228,7 +228,7 @@ SQRESULT sqstd_dynlib_load(HSQUIRRELVM v, const SQChar *path, SQBool is_private,
             return SQ_OK;
         }
         else {
-            sq_remove(v,-2);                            // [cloaded_table]
+            sq_poptop(v);                               // [cloaded_table]
         }
     }
     lib = sqstd_dynlib_rawload( path);
