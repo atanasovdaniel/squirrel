@@ -36,9 +36,7 @@ endif()
 
 if(NOT DEFINED DISABLE_STATIC)
   add_library(squirrel_static STATIC ${SQUIRREL_SRC})
-  target_include_directories(squirrel_static PUBLIC
-                         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../include>
-                         $<INSTALL_INTERFACE:${INSTALL_INC_DIR}>)
+  target_include_directories(squirrel_static PUBLIC ${SQUIRREL_PUBINC})
   if(NOT DEFINED SQ_DISABLE_INSTALLER)
     install(TARGETS squirrel_static EXPORT squirrel ARCHIVE DESTINATION ${INSTALL_LIB_DIR})
   endif()

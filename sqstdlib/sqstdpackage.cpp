@@ -58,11 +58,31 @@ THE SOFTWARE.
 #define CPATH_VAR_NAME      _SC("_PACKAGE_CPATH")
 #define CCHAIN_VAR_NAME     _SC("_PACKAGE_CCHAIN")
 
+typedef struct sqstd_package_list_tag {
+    const SQChar *name;
+    SQFUNCTION fct;
+} sqstd_package_list_t;
+
 static char PACKAGE_ID;
 static char SEARCHERS_ARRAY_ID;
 static char LOADED_TABLE_ID;
 static char CLOADED_TABLE_ID;
 static char CCHAIN_ID;
+
+#ifdef SQPACKAGE_BUILTIN_LIST
+#define SQ_PACKAGE_DEF(_vname,_loader)    extern "C" SQInteger _loader(HSQUIRRELVM v);
+#include SQPACKAGE_BUILTIN_LIST
+#undef SQ_PACKAGE_DEF
+#endif // SQPACKAGE_BUILTIN_LIST
+
+static sqstd_package_list_t builtin_packages[] = {
+#ifdef SQPACKAGE_BUILTIN_LIST
+#define SQ_PACKAGE_DEF(_vname,_loader)    {_SC(#_vname),_loader},
+#include SQPACKAGE_BUILTIN_LIST
+#undef SQ_PACKAGE_DEF
+#endif // SQPACKAGE_BUILTIN_LIST
+    {0,0}
+};
 
 /* ====================================
 		dynamic library
@@ -485,6 +505,21 @@ static SQFILE search_path(HSQUIRRELVM v)
     searchers
 ---------------- */
 
+static SQInteger package_search_builtin(HSQUIRRELVM v)
+{
+    const SQChar *pkg_name;
+    const sqstd_package_list_t *builtin = builtin_packages;
+    sq_getstring(v,2,&pkg_name);
+    while( builtin->name) {
+        if( scstrcmp(pkg_name,builtin->name) == 0) {
+            sq_newclosure(v,builtin->fct,0);             // closure
+            return 1;
+        }
+        builtin++;
+    }
+    return 0;
+}
+
 static const SQChar _dots_repl[2] = { DIR_SEP_CHAR, _SC('\0') };
 
 static SQInteger package_search_nut(HSQUIRRELVM v)
@@ -801,6 +836,9 @@ static const SQRegFunction package_funcs[]={
 
 static void fill_searchers(HSQUIRRELVM v)
 {// array
+    sq_newclosure(v,package_search_builtin,0);  // array, closure
+    sq_setnativeclosurename(v,-1,_SC("package_search_builtin"));
+    sq_arrayappend(v,-2);                   // array, [closure]
     sq_newclosure(v,package_search_nut,0);  // array, closure
     sq_setnativeclosurename(v,-1,_SC("search_package_nut"));
     sq_arrayappend(v,-2);                   // array, [closure]

@@ -1,3 +1,8 @@
+
+if(POLICY CMP0022)
+  cmake_policy(SET CMP0022 NEW)
+endif()
+
 set(SQSTDLIB_SRC sqstdaux.cpp
                  sqstdblob.cpp
                  sqstdio.cpp
@@ -17,7 +22,7 @@ set(SQSTDLIB_PUBINC
 
 if(NOT DEFINED DISABLE_DYNAMIC)
   add_library(sqstdlib SHARED ${SQSTDLIB_SRC})
-  target_link_libraries(sqstdlib squirrel ${CMAKE_DL_LIBS})
+  target_link_libraries(sqstdlib INTERFACE squirrel PRIVATE ${SQ_STDLIB_EXTRA_LIBS} INTERFACE ${CMAKE_DL_LIBS})
   target_include_directories(sqstdlib PUBLIC ${SQSTDLIB_PUBINC})
 
   add_library(sqstdlib_pkg INTERFACE)
@@ -37,10 +42,8 @@ endif()
 
 if(NOT DEFINED DISABLE_STATIC)
   add_library(sqstdlib_static STATIC ${SQSTDLIB_SRC})
-  target_link_libraries(sqstdlib_static ${CMAKE_DL_LIBS})
-  target_include_directories(sqstdlib_static PUBLIC
-                    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../include>
-                    $<INSTALL_INTERFACE:${INSTALL_INC_DIR}>)
+  target_link_libraries(sqstdlib_static PRIVATE ${SQ_STDLIB_EXTRA_LIBS} INTERFACE ${CMAKE_DL_LIBS})
+  target_include_directories(sqstdlib_static PUBLIC ${SQSTDLIB_PUBINC})
   if(NOT DEFINED SQ_DISABLE_INSTALLER)
     install(TARGETS sqstdlib_static EXPORT squirrel ARCHIVE DESTINATION ${INSTALL_LIB_DIR})
   endif()
