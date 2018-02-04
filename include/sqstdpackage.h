@@ -5,6 +5,11 @@
 extern "C" {
 #endif
 
+typedef struct tagSQSTDPackageList {
+    const SQChar *name;
+    SQFUNCTION fct;
+} SQSTDPackageList;
+
 extern SQUIRREL_API_VAR const struct tagSQRegClass _sqstd_dynlib_decl;
 #define SQSTD_DYNLIB_TYPE_TAG ((SQUserPointer)(SQHash)&_sqstd_dynlib_decl)
 
@@ -18,6 +23,8 @@ SQUIRREL_API SQRESULT sqstd_dynlib_error( HSQUIRRELVM v);
 SQUIRREL_API SQRESULT sqstd_dynlib_load(HSQUIRRELVM v, const SQChar *path, SQBool is_private, SQDYNLIB *plib);
 SQUIRREL_API SQRESULT sqstd_dynlib_sym(HSQUIRRELVM v,SQDYNLIB lib, const SQChar *sym_name, SQUserPointer *psym);
 SQUIRREL_API SQRESULT sqstd_dynlib_register(HSQUIRRELVM v, SQDYNLIB lib, const SQChar *path);
+
+SQUIRREL_API void sqstd_package_addbuiltins( const SQSTDPackageList *list);
 
 SQUIRREL_API SQRESULT sqstd_package_require(HSQUIRRELVM v, const SQChar *package);
 SQUIRREL_API SQRESULT sqstd_package_registerfct( HSQUIRRELVM v, const SQChar *package, SQFUNCTION fct);

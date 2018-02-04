@@ -28,6 +28,9 @@
 #define scvprintf vfprintf
 #endif
 
+#ifdef SQ_HAVE_BUILTIN_PACKAGES
+extern SQUIRREL_API_VAR const SQSTDPackageList sq_builtin_packages[];
+#endif // SQ_HAVE_BUILTIN_PACKAGES
 
 void PrintVersionInfos();
 
@@ -313,6 +316,10 @@ int main(int argc, char* argv[])
 #if defined(_MSC_VER) && defined(_DEBUG)
     _CrtSetAllocHook(MemAllocHook);
 #endif
+
+#ifdef SQ_HAVE_BUILTIN_PACKAGES
+    sqstd_package_addbuiltins(sq_builtin_packages);
+#endif // SQ_HAVE_BUILTIN_PACKAGES
 
     v=sq_open(1024);
     sq_setprintfunc(v,printfunc,errorfunc);

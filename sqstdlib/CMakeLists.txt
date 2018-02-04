@@ -22,7 +22,7 @@ set(SQSTDLIB_PUBINC
 
 if(NOT DEFINED DISABLE_DYNAMIC)
   add_library(sqstdlib SHARED ${SQSTDLIB_SRC})
-  target_link_libraries(sqstdlib INTERFACE squirrel PRIVATE ${SQ_STDLIB_EXTRA_LIBS} INTERFACE ${CMAKE_DL_LIBS})
+  target_link_libraries(sqstdlib INTERFACE squirrel INTERFACE ${CMAKE_DL_LIBS})
   target_include_directories(sqstdlib PUBLIC ${SQSTDLIB_PUBINC})
 
   add_library(sqstdlib_pkg INTERFACE)
@@ -42,7 +42,7 @@ endif()
 
 if(NOT DEFINED DISABLE_STATIC)
   add_library(sqstdlib_static STATIC ${SQSTDLIB_SRC})
-  target_link_libraries(sqstdlib_static PRIVATE ${SQ_STDLIB_EXTRA_LIBS} INTERFACE ${CMAKE_DL_LIBS})
+  target_link_libraries(sqstdlib_static INTERFACE ${CMAKE_DL_LIBS})
   target_include_directories(sqstdlib_static PUBLIC ${SQSTDLIB_PUBINC})
   if(NOT DEFINED SQ_DISABLE_INSTALLER)
     install(TARGETS sqstdlib_static EXPORT squirrel ARCHIVE DESTINATION ${INSTALL_LIB_DIR})

@@ -4,7 +4,7 @@ else()
   cmake_minimum_required(VERSION 2.8)
 endif()
 
-set(CMAKE_INSTALL_PREFIX "${CMAKE_SOURCE_DIR}" CACHE PATH "")
+set(CMAKE_INSTALL_PREFIX "${CMAKE_SOURCE_DIR}/install" CACHE PATH "")
 set(CMAKE_BUILD_TYPE "Release" CACHE STRING "")
 
 project(squirrel C CXX)

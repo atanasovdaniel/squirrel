@@ -19,16 +19,13 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 */
-
+#include <stdio.h>
 #include <string.h>
 #include <squirrel.h>
 #include <sqstdaux.h>
 #include <sqstdio.h>
 #include <sqstdsystem.h>
 #include <sqstdpackage.h>
-#ifdef _DEBUG
-#include <stdio.h>
-#endif // _DEBUG
 
 #ifdef _WIN32
 #define SQ_PACKAGE_DEFAULT_PATH     _SC(".\\?.nut;.\\?\\init.nut")
@@ -58,31 +55,13 @@ THE SOFTWARE.
 #define CPATH_VAR_NAME      _SC("_PACKAGE_CPATH")
 #define CCHAIN_VAR_NAME     _SC("_PACKAGE_CCHAIN")
 
-typedef struct sqstd_package_list_tag {
-    const SQChar *name;
-    SQFUNCTION fct;
-} sqstd_package_list_t;
-
 static char PACKAGE_ID;
 static char SEARCHERS_ARRAY_ID;
 static char LOADED_TABLE_ID;
 static char CLOADED_TABLE_ID;
 static char CCHAIN_ID;
 
-#ifdef SQPACKAGE_BUILTIN_LIST
-#define SQ_PACKAGE_DEF(_vname,_loader)    extern "C" SQInteger _loader(HSQUIRRELVM v);
-#include SQPACKAGE_BUILTIN_LIST
-#undef SQ_PACKAGE_DEF
-#endif // SQPACKAGE_BUILTIN_LIST
-
-static sqstd_package_list_t builtin_packages[] = {
-#ifdef SQPACKAGE_BUILTIN_LIST
-#define SQ_PACKAGE_DEF(_vname,_loader)    {_SC(#_vname),_loader},
-#include SQPACKAGE_BUILTIN_LIST
-#undef SQ_PACKAGE_DEF
-#endif // SQPACKAGE_BUILTIN_LIST
-    {0,0}
-};
+static const SQSTDPackageList *builtin_packages = 0;
 
 /* ====================================
 		dynamic library
@@ -106,7 +85,11 @@ SQDYNLIB sqstd_dynlib_rawload( const SQChar *path)
 
 SQUserPointer sqstd_dynlib_rawsym( SQDYNLIB lib, const SQChar *name)
 {
-    return (SQUserPointer)GetProcAddress( (HMODULE)lib, name);
+	SQUserPointer prc = (SQUserPointer)GetProcAddress( (HMODULE)lib, name);
+#ifdef _DEBUG
+    scprintf("GetProcAddress(%s) %p\n", name, prc);
+#endif // _DEBUG
+    return prc;
 }
 
 SQBool sqstd_dynlib_rawclose( SQDYNLIB lib)
@@ -505,17 +488,24 @@ static SQFILE search_path(HSQUIRRELVM v)
     searchers
 ---------------- */
 
+void sqstd_package_addbuiltins( const SQSTDPackageList *list)
+{
+    builtin_packages = list;
+}
+
 static SQInteger package_search_builtin(HSQUIRRELVM v)
 {
-    const SQChar *pkg_name;
-    const sqstd_package_list_t *builtin = builtin_packages;
-    sq_getstring(v,2,&pkg_name);
-    while( builtin->name) {
-        if( scstrcmp(pkg_name,builtin->name) == 0) {
-            sq_newclosure(v,builtin->fct,0);             // closure
-            return 1;
+    if( builtin_packages) {
+        const SQChar *pkg_name;
+        const SQSTDPackageList *builtin = builtin_packages;
+        sq_getstring(v,2,&pkg_name);
+        while( builtin->name) {
+            if( scstrcmp(pkg_name,builtin->name) == 0) {
+                sq_newclosure(v,builtin->fct,0);             // closure
+                return 1;
+            }
+            builtin++;
         }
-        builtin++;
     }
     return 0;
 }
@@ -563,7 +553,7 @@ static SQInteger package_search_nut(HSQUIRRELVM v)
 static SQInteger package_search_c(HSQUIRRELVM v)
 {
     // root, pkg_name
-    SQFILE file;
+    SQFILE file = 0;
     const SQChar *pkg_name;
     SQInteger pkg_dot;
     sq_pushregistrytable(v);                            // registry
@@ -580,29 +570,24 @@ static SQInteger package_search_c(HSQUIRRELVM v)
     }
     sq_remove(v,-2);                                    // [package], cpath
     sq_getstringandsize(v,2,&pkg_name,&pkg_dot);
-    while((pkg_dot > 0) && (pkg_name[pkg_dot] != _SC('.'))) pkg_dot--;
-    sq_push(v,-1);                                      // cpath, cpath
-    // first "aa.bb.cc" --> search file "aa.bb.cc" for symbol "cc"
-    sq_push(v,2);                                       // cpath, cpath, pkg_name
-    sq_pushstring(v,_dots_repl,-1);                     // cpath, cpath, pkg_name, dots_repl
-    replace_char(v, _SC('.'));                          // cpath, cpath, search_name
-    replace_char(v, PATH_REPLACE_CHAR);                 // cpath, path_to_search
-    file = search_path(v);
-    if( file) { sq_remove(v,-2); }                      // [cpath], filename
-    if( (file == 0) && (pkg_dot)) {
-        // second "aa.bb.cc" --> search file "aa.bb" for symbol "cc"
-        sq_pushstring(v, pkg_name, pkg_dot);            // cpath, pkg_name
-        sq_pushstring(v,_dots_repl,-1);                 // cpath, pkg_name, dots_repl
-        replace_char(v, _SC('.'));                      // cpath, search_name
-        replace_char(v, PATH_REPLACE_CHAR);             // path_to_search
+	do {												// cpath
+		sq_push(v,-1);									// cpath, cpath
+        sq_pushstring(v, pkg_name, pkg_dot);            // cpath, cpath, pkg_name
+        sq_pushstring(v,_dots_repl,-1);                 // cpath, cpath, pkg_name, dots_repl
+        replace_char(v, _SC('.'));                      // cpath, cpath, search_name
+        replace_char(v, PATH_REPLACE_CHAR);             // cpath, path_to_search
         file = search_path(v);
-    }
-    if( file) {
+		if( file) break;								// cpath, filename
+		pkg_dot--;
+		while((pkg_dot > 0) && (pkg_name[pkg_dot] != _SC('.'))) pkg_dot--;
+	} while( pkg_dot > 0);
+	if( file) {											// cpath, filename
         SQDYNLIB lib;
         const SQChar *filename;
         const SQChar *sym_name;
         SQUserPointer fct = 0;
         sqstd_fclose( file);
+		sq_remove(v,-2);								// [cpath], filename
         sq_getstring(v,-1,&filename);                   // filename
         if(SQ_FAILED(sqstd_dynlib_load(v,filename,SQFalse,&lib))) {
             sq_poptop(v);                               // [filename]
@@ -610,7 +595,9 @@ static SQInteger package_search_c(HSQUIRRELVM v)
         }
         sq_poptop(v);                                   // [filename]
         sq_pushstring(v, LOAD_FCT_TEMPLATE, -1);        // fct_template
-        sq_pushstring(v, pkg_dot ? pkg_name + pkg_dot + 1 : pkg_name, -1); // fct_template, pkg_part
+		sq_push(v,2);									// fct_template, pkg_name
+		sq_pushstring(v,_SC("_"),-1);					// fct_template, pkg_name, "_"
+        replace_char(v, _SC('.'));                      // fct_template, pkg_name_nodot
         replace_char(v, _SC('?'));                      // pkg_fct
         sq_getstring(v,-1,&sym_name);
         if(SQ_FAILED(sqstd_dynlib_sym(v, lib, sym_name, &fct))) {
@@ -621,8 +608,11 @@ static SQInteger package_search_c(HSQUIRRELVM v)
         sq_setnativeclosurename(v,-1,sym_name);
         sq_remove(v,-2);                                // [pkg_fct], closure
         return 1;
-    }
-    return 0;
+	}
+	else {												// cpath
+		sq_poptop(v);
+		return 0;
+	}
 }
 
 static SQInteger run_searchers(HSQUIRRELVM v, SQInteger idx)
