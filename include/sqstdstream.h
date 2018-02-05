@@ -24,8 +24,8 @@ extern "C" {
 #define SQ_SEEK_END 1
 #define SQ_SEEK_SET 2
 
-extern SQUIRREL_API_VAR const struct tagSQRegClass _sqstd_stream_decl;
-#define SQSTD_STREAM_TYPE_TAG ((SQUserPointer)(SQHash)&_sqstd_stream_decl)
+SQUIRREL_API SQUserPointer _sqstd_stream_type_tag(void);
+#define SQSTD_STREAM_TYPE_TAG _sqstd_stream_type_tag()
 
 typedef void *SQSTREAM;
 

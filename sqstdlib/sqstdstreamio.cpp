@@ -196,11 +196,7 @@ SQUIRREL_API SQInteger sqstd_srdrreset(SQSRDR srdr)
 	return self->Reset();
 }
 
-static SQInteger _srdr__typeof(HSQUIRRELVM v)
-{
-    sq_pushstring(v,_sqstd_streamreader_decl.name,-1);
-    return 1;
-}
+static SQInteger _srdr__typeof(HSQUIRRELVM v);
 
 static SQInteger _srdr_constructor(HSQUIRRELVM v)
 {
@@ -208,7 +204,7 @@ static SQInteger _srdr_constructor(HSQUIRRELVM v)
 	SQSTREAM stream;
 	SQBool owns = SQFalse;
 	SQInteger buffer_size = 0;
-    if( SQ_FAILED( sq_getinstanceup( v,2,(SQUserPointer*)&stream,(SQUserPointer)SQSTD_STREAM_TYPE_TAG))) {
+    if( SQ_FAILED( sq_getinstanceup( v,2,(SQUserPointer*)&stream,SQSTD_STREAM_TYPE_TAG))) {
         return sq_throwerror(v,_SC("invalid argument type"));
 	}
 	if( sq_gettop(v) > 2) {
@@ -234,7 +230,7 @@ static SQInteger _srdr_constructor(HSQUIRRELVM v)
 
 #define SETUP_STREAMRDR(v) \
     SQTStreamReader *self = NULL; \
-    if(SQ_FAILED(sq_getinstanceup(v,1,(SQUserPointer*)&self,(SQUserPointer)SQSTD_STREAMREADER_TYPE_TAG))) \
+    if(SQ_FAILED(sq_getinstanceup(v,1,(SQUserPointer*)&self,SQSTD_STREAMREADER_TYPE_TAG))) \
         return sq_throwerror(v,_SC("invalid type tag")); \
     if(!self || !self->IsValid())  \
         return sq_throwerror(v,_SC("the streamreader is invalid"));
@@ -283,19 +279,28 @@ static const SQRegMember _srdr_members[] = {
 	{NULL,NULL}
 };
 
-const SQRegClass _sqstd_streamreader_decl = {
-	&_sqstd_stream_decl,	// base_class
-    _SC("sqstd_streamreader"),	// reg_name
+SQUserPointer _sqstd_streamreader_type_tag(void)
+{
+    return (SQUserPointer)_sqstd_streamreader_type_tag;
+}
+
+static const SQRegClass _sqstd_streamreader_decl = {
     _SC("reader"),          // name
 	_srdr_members,			// members
 	_srdr_methods,		// methods
 };
 
+static SQInteger _srdr__typeof(HSQUIRRELVM v)
+{
+    sq_pushstring(v,_sqstd_streamreader_decl.name,-1);
+    return 1;
+}
+
 SQInteger sqstd_load_streamio(HSQUIRRELVM v)
 {
     sq_newtable(v);
 
-	if(SQ_FAILED(sqstd_registerclass(v,&_sqstd_streamreader_decl))) {
+	if(SQ_FAILED(sqstd_registerclass(v,SQSTD_STREAMREADER_TYPE_TAG,&_sqstd_streamreader_decl,SQSTD_STREAM_TYPE_TAG))) {
 		return SQ_ERROR;
 	}
     sq_poptop(v);

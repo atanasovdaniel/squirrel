@@ -29,7 +29,7 @@
 #endif
 
 #ifdef SQ_HAVE_BUILTIN_PACKAGES
-extern SQUIRREL_API_VAR const SQSTDPackageList sq_builtin_packages[];
+extern const SQSTDPackageList sq_builtin_packages[];
 #endif // SQ_HAVE_BUILTIN_PACKAGES
 
 void PrintVersionInfos();

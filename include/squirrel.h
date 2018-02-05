@@ -30,9 +30,6 @@ THE SOFTWARE.
 extern "C" {
 #endif
 
-#ifndef SQUIRREL_API_VAR
-#define SQUIRREL_API_VAR
-#endif
 #ifndef SQUIRREL_API
 #define SQUIRREL_API extern
 #endif

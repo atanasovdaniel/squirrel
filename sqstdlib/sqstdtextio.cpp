@@ -560,11 +560,7 @@ SQSTREAM sqstd_textreader(SQSTREAM stream,SQBool owns,const SQChar *encoding,SQB
 // ------------------------------------
 // TextReader Bindings
 
-static SQInteger _textreader__typeof(HSQUIRRELVM v)
-{
-    sq_pushstring(v,_sqstd_textreader_decl.name,-1);
-    return 1;
-}
+static SQInteger _textreader__typeof(HSQUIRRELVM v);
 
 static SQInteger _textreader_constructor(HSQUIRRELVM v)
 {
@@ -575,9 +571,9 @@ static SQInteger _textreader_constructor(HSQUIRRELVM v)
 	SQBool guess = SQFalse;
 	SQBool stream_is_reader = SQTrue;
 
-    if( SQ_FAILED( sq_getinstanceup( v,2,(SQUserPointer*)&stream,(SQUserPointer)SQSTD_STREAMREADER_TYPE_TAG))) {
+    if( SQ_FAILED( sq_getinstanceup( v,2,(SQUserPointer*)&stream,SQSTD_STREAMREADER_TYPE_TAG))) {
 		stream_is_reader = SQFalse;
-	    if( SQ_FAILED( sq_getinstanceup( v,2,(SQUserPointer*)&stream,(SQUserPointer)SQSTD_STREAM_TYPE_TAG)))
+	    if( SQ_FAILED( sq_getinstanceup( v,2,(SQUserPointer*)&stream,SQSTD_STREAM_TYPE_TAG)))
 	        return sq_throwerror(v,_SC("invalid argument type"));
 	}
 	if( top > 2) {
@@ -626,13 +622,22 @@ static const SQRegMember _textreader_members[] = {
 	{NULL,NULL}
 };
 
-const SQRegClass _sqstd_textreader_decl = {
-	&_sqstd_stream_decl,	// base_class
-    _SC("std_textreader"),	// reg_name
+SQUserPointer _sqstd_textreader_type_tag(void)
+{
+    return (SQUserPointer)_sqstd_textreader_type_tag;
+}
+
+static const SQRegClass _sqstd_textreader_decl = {
     _SC("reader"),          // name
 	_textreader_members,	// members
 	_textreader_methods,	// methods
 };
+
+static SQInteger _textreader__typeof(HSQUIRRELVM v)
+{
+    sq_pushstring(v,_sqstd_textreader_decl.name,-1);
+    return 1;
+}
 
 /* ====================================
 		Text Writer
@@ -808,11 +813,7 @@ SQSTREAM sqstd_textwriter(SQSTREAM stream,SQBool owns,const SQChar *encoding)
 // ------------------------------------
 // TextWriter Bindings
 
-static SQInteger _textwriter__typeof(HSQUIRRELVM v)
-{
-    sq_pushstring(v,_sqstd_textwriter_decl.name,-1);
-    return 1;
-}
+static SQInteger _textwriter__typeof(HSQUIRRELVM v);
 
 static SQInteger _textwriter_constructor(HSQUIRRELVM v)
 {
@@ -821,7 +822,7 @@ static SQInteger _textwriter_constructor(HSQUIRRELVM v)
 	SQBool owns = SQFalse;
 	const SQChar *encoding = NULL;
 
-    if( SQ_FAILED( sq_getinstanceup( v,2,(SQUserPointer*)&stream,(SQUserPointer)SQSTD_STREAM_TYPE_TAG))) {
+    if( SQ_FAILED( sq_getinstanceup( v,2,(SQUserPointer*)&stream,SQSTD_STREAM_TYPE_TAG))) {
         return sq_throwerror(v,_SC("invalid argument type"));
 	}
 
@@ -862,13 +863,22 @@ static const SQRegMember _textwriter_members[] = {
 	{NULL,NULL}
 };
 
-const SQRegClass _sqstd_textwriter_decl = {
-	&_sqstd_stream_decl,	// base_class
-    _SC("std_textwriter"),	// reg_name
+SQUserPointer _sqstd_textwriter_type_tag(void)
+{
+    return (SQUserPointer)_sqstd_textwriter_type_tag;
+}
+
+static const SQRegClass _sqstd_textwriter_decl = {
     _SC("writer"),          // name
 	_textwriter_members,	// members
 	_textwriter_methods,	// methods
 };
+
+static SQInteger _textwriter__typeof(HSQUIRRELVM v)
+{
+    sq_pushstring(v,_sqstd_textwriter_decl.name,-1);
+    return 1;
+}
 
 /* ====================================
 		Register
@@ -878,13 +888,13 @@ SQInteger sqstd_load_textio(HSQUIRRELVM v)
 {
     sq_newtable(v);
 
-	if(SQ_FAILED(sqstd_registerclass(v,&_sqstd_textreader_decl)))
+	if(SQ_FAILED(sqstd_registerclass(v,SQSTD_TEXTREADER_TYPE_TAG,&_sqstd_textreader_decl,SQSTD_STREAM_TYPE_TAG)))
 	{
 		return SQ_ERROR;
 	}
  	sq_poptop(v);
 
-	if(SQ_FAILED(sqstd_registerclass(v,&_sqstd_textwriter_decl)))
+	if(SQ_FAILED(sqstd_registerclass(v,SQSTD_TEXTWRITER_TYPE_TAG,&_sqstd_textwriter_decl,SQSTD_STREAM_TYPE_TAG)))
 	{
 		return SQ_ERROR;
 	}

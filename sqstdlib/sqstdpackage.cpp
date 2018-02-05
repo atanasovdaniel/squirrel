@@ -265,7 +265,7 @@ SQRESULT sqstd_dynlib_sym(HSQUIRRELVM v,SQDYNLIB lib, const SQChar *sym_name, SQ
 
 #define SETUP_DYNLIB(v) \
     SQUserPointer self = NULL; \
-    if(SQ_FAILED(sq_getinstanceup(v,1,(SQUserPointer*)&self,(SQUserPointer)((SQUnsignedInteger)SQSTD_DYNLIB_TYPE_TAG)))) \
+    if(SQ_FAILED(sq_getinstanceup(v,1,(SQUserPointer*)&self,SQSTD_DYNLIB_TYPE_TAG))) \
         return sq_throwerror(v,_SC("invalid type tag"));
 
 static HSQMEMBERHANDLE dynlib__path_handle;
@@ -350,11 +350,7 @@ static SQInteger _dynlib_cfunction(HSQUIRRELVM v)
     return 1;
 }
 
-static SQInteger _dynlib__typeof(HSQUIRRELVM v)
-{
-    sq_pushstring(v,_sqstd_dynlib_decl.name,-1);
-    return 1;
-}
+static SQInteger _dynlib__typeof(HSQUIRRELVM v);
 
 //bindings
 #define _DECL_DYNLIB_FUNC(name,nparams,typecheck) {_SC(#name),_dynlib_##name,nparams,typecheck}
@@ -372,13 +368,22 @@ static const SQRegMember _dynlib_members[] = {
 	{NULL,NULL}
 };
 
-const SQRegClass _sqstd_dynlib_decl = {
-	NULL,                   // base_class
-    _SC("std_dynlib"),      // reg_name
+SQUserPointer _sqstd_dynlib_type_tag(void)
+{
+    return (SQUserPointer)_sqstd_dynlib_type_tag;
+}
+
+static const SQRegClass _sqstd_dynlib_decl = {
     _SC("dynlib"),          // name
 	_dynlib_members,        // members
 	_dynlib_methods,        // methods
 };
+
+static SQInteger _dynlib__typeof(HSQUIRRELVM v)
+{
+    sq_pushstring(v,_sqstd_dynlib_decl.name,-1);
+    return 1;
+}
 
 /* ====================================
 		package
@@ -843,7 +848,7 @@ SQRESULT sqstd_register_packagelib(HSQUIRRELVM v)
     // package = {...}
     sq_newtable(v);                             // registry, package
     sqstd_registerfunctions(v, package_funcs);  // registry, package
-	if(SQ_FAILED(sqstd_registerclass(v,&_sqstd_dynlib_decl)))
+	if(SQ_FAILED(sqstd_registerclass(v,SQSTD_DYNLIB_TYPE_TAG,&_sqstd_dynlib_decl,0)))
 	{
 		return SQ_ERROR;
 	}

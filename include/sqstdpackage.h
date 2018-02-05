@@ -10,8 +10,8 @@ typedef struct tagSQSTDPackageList {
     SQFUNCTION fct;
 } SQSTDPackageList;
 
-extern SQUIRREL_API_VAR const struct tagSQRegClass _sqstd_dynlib_decl;
-#define SQSTD_DYNLIB_TYPE_TAG ((SQUserPointer)(SQHash)&_sqstd_dynlib_decl)
+SQUIRREL_API SQUserPointer _sqstd_dynlib_type_tag(void);
+#define SQSTD_DYNLIB_TYPE_TAG _sqstd_dynlib_type_tag()
 
 typedef void *SQDYNLIB;
 

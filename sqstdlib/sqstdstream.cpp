@@ -82,7 +82,7 @@ SQInteger sqstd_STREAMREADFUNC(SQUserPointer user,SQUserPointer buf,SQInteger si
 
 #define SETUP_STREAM(v) \
     SQStream *self = NULL; \
-    if(SQ_FAILED(sq_getinstanceup(v,1,(SQUserPointer*)&self,(SQUserPointer)((SQUnsignedInteger)SQSTD_STREAM_TYPE_TAG)))) \
+    if(SQ_FAILED(sq_getinstanceup(v,1,(SQUserPointer*)&self,SQSTD_STREAM_TYPE_TAG))) \
         return sq_throwerror(v,_SC("invalid type tag")); \
     if(!self || !self->IsValid())  \
         return sq_throwerror(v,_SC("the stream is invalid"));
@@ -356,6 +356,8 @@ static SQInteger _stream_close(HSQUIRRELVM v)
     return 1;
 }
 
+static SQInteger _stream__typeof(HSQUIRRELVM v);
+
 static SQInteger _stream__cloned(HSQUIRRELVM v)
 {
 	 return sq_throwerror(v,_SC("stream object cannot be cloned"));
@@ -382,17 +384,27 @@ static const SQRegFunction _stream_methods[] = {
     _DECL_STREAM_FUNC(eos,1,_SC("x")),
     _DECL_STREAM_FUNC(flush,1,_SC("x")),
     _DECL_STREAM_FUNC(close,1,_SC("x")),
+    _DECL_STREAM_FUNC(_typeof,1,_SC("x")),
     _DECL_STREAM_FUNC(_cloned,0,NULL),
     {NULL,(SQFUNCTION)0,0,NULL}
 };
 
-const SQRegClass _sqstd_stream_decl = {
-	NULL,				// base_class
-    _SC("std_stream"),	// reg_name
+SQUserPointer _sqstd_stream_type_tag(void)
+{
+    return (SQUserPointer)_sqstd_stream_type_tag;
+}
+
+static const SQRegClass _sqstd_stream_decl = {
     _SC("stream"),		// name
 	NULL,				// members
 	_stream_methods,	// methods
 };
+
+static SQInteger _stream__typeof(HSQUIRRELVM v)
+{
+    sq_pushstring(v,_sqstd_stream_decl.name,-1);
+    return 1;
+}
 
 // bindings
 static SQInteger _g_stream_loadstream(HSQUIRRELVM v)
@@ -400,7 +412,7 @@ static SQInteger _g_stream_loadstream(HSQUIRRELVM v)
 	SQSTREAM stream = NULL;
     const SQChar *sourcename;
     SQBool printerror = SQFalse;
-    if( SQ_FAILED( sq_getinstanceup( v,2,(SQUserPointer*)&stream,(SQUserPointer)SQSTD_STREAM_TYPE_TAG))) {
+    if( SQ_FAILED( sq_getinstanceup( v,2,(SQUserPointer*)&stream,SQSTD_STREAM_TYPE_TAG))) {
         return sq_throwerror(v,_SC("invalid argument type"));
 	}
     sq_getstring(v,3,&sourcename);
@@ -416,7 +428,7 @@ static SQInteger _g_stream_loadstream(HSQUIRRELVM v)
 static SQInteger _g_stream_writeclosuretostream(HSQUIRRELVM v)
 {
 	SQSTREAM stream = NULL;
-    if( SQ_FAILED( sq_getinstanceup( v,2,(SQUserPointer*)&stream,(SQUserPointer)SQSTD_STREAM_TYPE_TAG))) {
+    if( SQ_FAILED( sq_getinstanceup( v,2,(SQUserPointer*)&stream,SQSTD_STREAM_TYPE_TAG))) {
         return sq_throwerror(v,_SC("invalid argument type"));
 	}
 	if(SQ_SUCCEEDED(sqstd_writeclosuretostream(v,stream))) {
@@ -450,7 +462,7 @@ SQInteger sqstd_load_stream(HSQUIRRELVM v)
 {
     sq_newtable(v);
 
-	if(SQ_FAILED(sqstd_registerclass(v,&_sqstd_stream_decl)))
+	if(SQ_FAILED(sqstd_registerclass(v,SQSTD_STREAM_TYPE_TAG,&_sqstd_stream_decl,0)))
 	{
 		return SQ_ERROR;
 	}

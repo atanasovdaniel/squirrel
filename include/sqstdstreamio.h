@@ -6,8 +6,8 @@
 extern "C" {
 #endif
 
-extern SQUIRREL_API_VAR const struct tagSQRegClass _sqstd_streamreader_decl;
-#define SQSTD_STREAMREADER_TYPE_TAG ((SQUserPointer)(SQHash)&_sqstd_streamreader_decl)
+SQUIRREL_API SQUserPointer _sqstd_streamreader_type_tag(void);
+#define SQSTD_STREAMREADER_TYPE_TAG _sqstd_streamreader_type_tag()
 
 typedef struct tagSQSRDR *SQSRDR;
 

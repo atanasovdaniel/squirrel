@@ -181,38 +181,39 @@ SQInteger sqstd_registermembers(HSQUIRRELVM v,const SQRegMember *membs)
 	return SQ_OK;
 }
 
-SQInteger sqstd_registerclass(HSQUIRRELVM v,const SQRegClass *decl)
-{															// table
-    sq_pushregistrytable(v);								// table, registry
-    sq_pushstring(v,decl->reg_name,-1);						// table, registry, reg_name
+SQInteger sqstd_registerclass(HSQUIRRELVM v,SQUserPointer type_tag, const SQRegClass *decl, SQUserPointer base_type_tag)
+{														// table
+    sq_pushregistrytable(v);							// table, registry
+    sq_pushuserpointer(v,type_tag);						// table, registry, type_tag
     if(SQ_FAILED(sq_get(v,-2))) {
-															// table, registry
-        sq_pop(v,1);										// table
-		if( decl->base_class != 0) {
-			sqstd_registerclass(v,decl->base_class);		// table, base_class
-			sq_newclass(v,SQTrue);							// table, new_class
-		}
-		else {
-			sq_newclass(v,SQFalse);							// table, new_class
-		}
-        sq_settypetag(v,-1,(SQUserPointer)(SQHash)decl);
+        if( base_type_tag != 0) {
+            sq_pushuserpointer(v,base_type_tag);		// table, registry, base_type_tag
+            if(SQ_FAILED(sq_get(v,-2))) {
+                sq_poptop(v);                           // table, [registry]
+                return SQ_ERROR;
+            }
+			sq_newclass(v,SQTrue);					    // table, registry, new_class
+        }
+        else {
+			sq_newclass(v,SQFalse);						// table, registry, new_class
+        }
+        sq_settypetag(v,-1,type_tag);
+        sq_pushuserpointer(v,type_tag);                 // table, registry, new_class, type_tag
+        sq_push(v,-2);                                  // table, registry, new_class, type_tag, new_class
+        sq_newslot(v,-4,SQFalse);                       // table, registry, new_class, [type_tag, new_class]
+        sq_remove(v,-2);                                // table, [registry], new_class
 		sqstd_registermembers(v,decl->members);
 		sqstd_registerfunctions(v,decl->methods);
-		
-		sq_pushregistrytable(v);							// table, new_class, registry
-		sq_pushstring(v,decl->reg_name,-1);					// table, new_class, registry, reg_name
-		sq_push(v,-3);										// table, new_class, registry, reg_name, new_class
-        sq_newslot(v,-3,SQFalse);							// table, new_class, registry
-        sq_poptop(v);                                       // table, new_class
 		if( decl->name != 0) {
-			sq_pushstring(v,decl->name,-1);					// table, new_class, class_name
-			sq_push(v,-2);									// table, new_class, class_name, new_class
-			sq_newslot(v,-4,SQFalse);						// table, new_class
+			sq_pushstring(v,decl->name,-1);			    // table, new_class, class_name
+			sq_push(v,-2);								// table, new_class, class_name, new_class
+			sq_newslot(v,-4,SQFalse);					// table, new_class, [class_name, new_class]
 		}
     }
     else {
-															// table, registry, reg_class
-		sq_remove(v,-2);									// table, reg_class
+														// table, registry, reg_class
+		sq_remove(v,-2);								// table, reg_class
     }
     return SQ_OK;
 }
+

@@ -9,7 +9,7 @@
 struct SQFile : public SQStream {
     SQFile() { _handle = NULL; _owns = false;}
     SQFile( FILE *file, bool owns) { _handle = file; _owns = owns;}
-	
+
     bool Open(const SQChar *filename ,const SQChar *mode) {
         Close();
 #ifndef SQUNICODE
@@ -116,11 +116,7 @@ SQInteger sqstd_fclose(SQFILE file)
     return SQ_OK;
 }
 
-static SQInteger _file__typeof(HSQUIRRELVM v)
-{
-    sq_pushstring(v,_sqstd_file_decl.name,-1);
-    return 1;
-}
+static SQInteger _file__typeof(HSQUIRRELVM v);
 
 static SQInteger _file_constructor(HSQUIRRELVM v)
 {
@@ -164,19 +160,28 @@ static const SQRegFunction _file_methods[] = {
     {NULL,(SQFUNCTION)0,0,NULL}
 };
 
-const SQRegClass _sqstd_file_decl = {
-	&_sqstd_stream_decl,	// base_class
-    _SC("std_file"),	// reg_name
+SQUserPointer _sqstd_file_type_tag(void)
+{
+    return (SQUserPointer)_sqstd_file_type_tag;
+}
+
+static const SQRegClass _sqstd_file_decl = {
     _SC("file"),		// name
 	NULL,				// members
 	_file_methods,		// methods
 };
 
+static SQInteger _file__typeof(HSQUIRRELVM v)
+{
+    sq_pushstring(v,_sqstd_file_decl.name,-1);
+    return 1;
+}
+
 SQRESULT sqstd_createsqfile(HSQUIRRELVM v, SQFILE file,SQBool own)
 {
     SQInteger top = sq_gettop(v);
     sq_pushregistrytable(v);
-    sq_pushstring(v,_sqstd_file_decl.reg_name,-1);
+    sq_pushuserpointer(v,SQSTD_FILE_TYPE_TAG);
     if(SQ_SUCCEEDED(sq_get(v,-2))) {
         sq_remove(v,-2); //removes the registry
         sq_pushroottable(v); // push the this
@@ -199,7 +204,7 @@ SQRESULT sqstd_createsqfile(HSQUIRRELVM v, SQFILE file,SQBool own)
 SQRESULT sqstd_getfile(HSQUIRRELVM v, SQInteger idx, SQUserPointer *file)
 {
     SQFile *fileobj = NULL;
-    if(SQ_SUCCEEDED(sq_getinstanceup(v,idx,(SQUserPointer*)&fileobj,(SQUserPointer)SQSTD_FILE_TYPE_TAG))) {
+    if(SQ_SUCCEEDED(sq_getinstanceup(v,idx,(SQUserPointer*)&fileobj,SQSTD_FILE_TYPE_TAG))) {
         *file = fileobj->GetHandle();
         return SQ_OK;
     }
@@ -215,7 +220,7 @@ SQRESULT sqstd_createfile(HSQUIRRELVM v, SQUserPointer file,SQBool own)
 SQRESULT sqstd_getsqfile(HSQUIRRELVM v, SQInteger idx, SQFILE *file)
 {
     SQFile *fileobj = NULL;
-    if(SQ_SUCCEEDED(sq_getinstanceup(v,idx,(SQUserPointer*)&fileobj,(SQUserPointer)SQSTD_FILE_TYPE_TAG))) {
+    if(SQ_SUCCEEDED(sq_getinstanceup(v,idx,(SQUserPointer*)&fileobj,SQSTD_FILE_TYPE_TAG))) {
         *file = (SQFILE)fileobj;
         return SQ_OK;
     }
@@ -226,7 +231,7 @@ SQRESULT sqstd_opensqfile(HSQUIRRELVM v, const SQChar *filename ,const SQChar *m
 {
     SQInteger top = sq_gettop(v);
     sq_pushregistrytable(v);                                // registry
-    sq_pushstring(v,_sqstd_file_decl.reg_name,-1);          // registry, "file"
+    sq_pushuserpointer(v,SQSTD_FILE_TYPE_TAG);              // registry, file_type_tag
     if(SQ_SUCCEEDED(sq_get(v,-2))) {                        // registry, file_class
         sq_remove(v,-2); //removes the registry             // file_class
         sq_pushnull(v); // push fake this                   // file_class, fake_this
@@ -332,14 +337,14 @@ static const SQRegFunction iolib_funcs[]={
 SQRESULT sqstd_register_iolib(HSQUIRRELVM v)
 {
     SQInteger top = sq_gettop(v);
-	if(SQ_FAILED(sqstd_registerclass(v,&_sqstd_file_decl)))
+	if(SQ_FAILED(sqstd_registerclass(v,SQSTD_FILE_TYPE_TAG,&_sqstd_file_decl,SQSTD_STREAM_TYPE_TAG)))
 	{
 		return SQ_ERROR;
 	}
 	sq_poptop(v);
-    
+
 	sqstd_registerfunctions(v,iolib_funcs);
-    
+
     sq_pushstring(v,_SC("stdout"),-1);
     sqstd_createfile(v,stdout,SQFalse);
     sq_newslot(v,-3,SQFalse);
@@ -349,7 +354,7 @@ SQRESULT sqstd_register_iolib(HSQUIRRELVM v)
     sq_pushstring(v,_SC("stderr"),-1);
     sqstd_createfile(v,stderr,SQFalse);
     sq_newslot(v,-3,SQFalse);
-    
+
     sq_settop(v,top);
     return SQ_OK;
 }

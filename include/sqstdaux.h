@@ -15,14 +15,12 @@ typedef struct tagSQRegMember {
 } SQRegMember;
 
 typedef struct tagSQRegClass {
-	const struct tagSQRegClass *base_class;
-    const SQChar *reg_name;
     const SQChar *name;
     const SQRegMember *members;
 	const SQRegFunction	*methods;
 } SQRegClass;
 
-SQUIRREL_API SQInteger sqstd_registerclass(HSQUIRRELVM v,const SQRegClass *decl);
+SQUIRREL_API SQInteger sqstd_registerclass(HSQUIRRELVM v,SQUserPointer type_tag, const SQRegClass *decl, SQUserPointer base_type_tag);
 SQUIRREL_API SQInteger sqstd_registermembers(HSQUIRRELVM v,const SQRegMember *membs);
 SQUIRREL_API SQInteger sqstd_registerfunctions(HSQUIRRELVM v,const SQRegFunction *fcts);
 

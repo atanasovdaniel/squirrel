@@ -8,10 +8,10 @@
 extern "C" {
 #endif
 
-extern SQUIRREL_API_VAR const struct tagSQRegClass _sqstd_file_decl;
-#define SQSTD_FILE_TYPE_TAG ((SQUserPointer)(SQHash)&_sqstd_file_decl)
-extern SQUIRREL_API_VAR const struct tagSQRegClass _sqstd_popen_decl;
-#define SQSTD_POPEN_TYPE_TAG ((SQUserPointer)(SQHash)&_sqstd_popen_decl)
+SQUIRREL_API SQUserPointer _sqstd_file_type_tag(void);
+#define SQSTD_FILE_TYPE_TAG _sqstd_file_type_tag()
+SQUIRREL_API SQUserPointer _sqstd_popen_type_tag(void);
+#define SQSTD_POPEN_TYPE_TAG _sqstd_popen_type_tag()
 
 typedef void* SQFILE;
 
