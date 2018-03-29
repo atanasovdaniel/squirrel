@@ -19,15 +19,8 @@ if(NOT DEFINED DISABLE_DYNAMIC)
   add_library(squirrel SHARED ${SQUIRREL_SRC})
   target_include_directories(squirrel PUBLIC ${SQUIRREL_PUBINC})
 
-  add_library(squirrel_pkg INTERFACE)
-  if(WIN32)
-    target_link_libraries(squirrel_pkg INTERFACE squirrel)
-  else()
-    target_include_directories(squirrel_pkg INTERFACE ${SQUIRREL_PUBINC})
-  endif()
-  
   if(NOT DEFINED SQ_DISABLE_INSTALLER)
-    install(TARGETS squirrel squirrel_pkg EXPORT squirrel
+    install(TARGETS squirrel EXPORT squirrel
                          RUNTIME DESTINATION ${INSTALL_BIN_DIR}
                          LIBRARY DESTINATION ${INSTALL_LIB_DIR}
                          ARCHIVE DESTINATION ${INSTALL_LIB_DIR})

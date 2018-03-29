@@ -24,16 +24,9 @@ if(NOT DEFINED DISABLE_DYNAMIC)
   add_library(sqstdlib SHARED ${SQSTDLIB_SRC})
   target_link_libraries(sqstdlib INTERFACE squirrel INTERFACE ${CMAKE_DL_LIBS})
   target_include_directories(sqstdlib PUBLIC ${SQSTDLIB_PUBINC})
-
-  add_library(sqstdlib_pkg INTERFACE)
-  if(WIN32)
-    target_link_libraries(sqstdlib_pkg INTERFACE sqstdlib)
-  else()
-    target_include_directories(sqstdlib_pkg INTERFACE ${SQSTDLIB_PUBINC})
-  endif()
   
   if(NOT DEFINED SQ_DISABLE_INSTALLER)
-    install(TARGETS sqstdlib sqstdlib_pkg EXPORT squirrel
+    install(TARGETS sqstdlib EXPORT squirrel
                              RUNTIME DESTINATION ${INSTALL_BIN_DIR}
                              LIBRARY DESTINATION ${INSTALL_LIB_DIR}
                              ARCHIVE DESTINATION ${INSTALL_LIB_DIR})
