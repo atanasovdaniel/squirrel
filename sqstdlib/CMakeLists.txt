@@ -7,6 +7,7 @@ set(SQSTDLIB_SRC sqstdaux.cpp
                  sqstdblob.cpp
                  sqstdio.cpp
                  sqstdmath.cpp
+                 sqstddynlib.cpp
                  sqstdpackage.cpp
                  sqstdrex.cpp
                  sqstdsquirrelio.cpp
@@ -47,6 +48,7 @@ if(NOT DEFINED SQ_DISABLE_INSTALLDEV)
                      ${CMAKE_CURRENT_SOURCE_DIR}/../include/sqstdblob.h
                      ${CMAKE_CURRENT_SOURCE_DIR}/../include/sqstdio.h
                      ${CMAKE_CURRENT_SOURCE_DIR}/../include/sqstdmath.h
+                     ${CMAKE_CURRENT_SOURCE_DIR}/../include/sqstddynlib.h
                      ${CMAKE_CURRENT_SOURCE_DIR}/../include/sqstdpackage.h
                      ${CMAKE_CURRENT_SOURCE_DIR}/../include/sqstdstream.h
                      ${CMAKE_CURRENT_SOURCE_DIR}/../include/sqstdstreamio.h
