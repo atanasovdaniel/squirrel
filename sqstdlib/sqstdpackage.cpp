@@ -25,43 +25,57 @@ THE SOFTWARE.
 #include <sqstdaux.h>
 #include <sqstdio.h>
 #include <sqstdsystem.h>
-#ifdef SQ_ENABLE_DYNLIB
+
+#ifdef SQSTD_ENABLE_DYNLIB
 #include <sqstddynlib.h>
-#endif // SQ_ENABLE_DYNLIB
+#endif // SQSTD_ENABLE_DYNLIB
 
 #include <sqstdpackage.h>
 
 #ifdef _WIN32
-#define SQ_PACKAGE_DEFAULT_PATH     _SC(".\\?.nut;.\\?\\init.nut")
-#define SQ_PACKAGE_DEFAULT_CPATH    _SC(".\\?.dll")
-#else // _WIN32
-#define SQ_PACKAGE_DEFAULT_PATH     _SC("./?.nut;./?/init.nut")
-#define SQ_PACKAGE_DEFAULT_CPATH    _SC("./?.so")
-#endif // _WIN32
-
-#define LOAD_FCT_TEMPLATE           _SC("sqload_?")
-
-#define SQ_PACKAGE_PATH_ENV         _SC("SQ_PATH")
-#define SQ_PACKAGE_CPATH_ENV        _SC("SQ_CPATH")
-
-#ifdef _WIN32
 #define DIR_SEP_CHAR        _SC('\\')
+#define DIR_SEP_STRING      _SC("\\")
+#define PATH_LIST_SEP_CHAR  _SC(';')
 #else // _WIN32
 #define DIR_SEP_CHAR        _SC('/')
+#define DIR_SEP_STRING      _SC("/")
+#define PATH_LIST_SEP_CHAR  _SC(':')
 #endif // _WIN32
 
-#define PATH_SEP_CHAR       _SC(';')
 #define PATH_REPLACE_CHAR   _SC('?')
 
-#define LOADED_TABLE_NAME   _SC("_PACKAGE_LOADED")
-#define CLOADED_TABLE_NAME  _SC("_PACKAGE_CLOADED")
-#define PATH_VAR_NAME       _SC("_PACKAGE_PATH")
-#define CPATH_VAR_NAME      _SC("_PACKAGE_CPATH")
-#define CCHAIN_VAR_NAME     _SC("_PACKAGE_CCHAIN")
+#define SQ_PACKAGE_PATH_ENV     _SC("SQ_PATH")
+#define SQ_PACKAGE_NUT_SUFFIXES _SC(DIR_SEP_STRING "?.nut"), _SC(DIR_SEP_STRING "?" DIR_SEP_STRING "init.nut")
+
+static const SQChar *nut_suffixes[] = {
+    SQ_PACKAGE_NUT_SUFFIXES,
+    0
+};
+
+#ifdef SQSTD_ENABLE_DYNLIB
+    #ifdef _WIN32
+        #define DYNLIB_EXT_STRING   _SC(".dll")
+    #else // _WIN32
+        #define DYNLIB_EXT_STRING   _SC(".so")
+    #endif // _WIN32
+
+    #define SQ_PACKAGE_CPATH_ENV    _SC("SQ_CPATH")
+    #define SQ_PACKAGE_C_SUFFIXES   _SC(DIR_SEP_STRING "?" DYNLIB_EXT_STRING)
+    #define LOAD_FCT_TEMPLATE       _SC("sqload_?")
+
+    static const SQChar *c_suffixes[] = {
+        SQ_PACKAGE_C_SUFFIXES,
+        0
+    };
+#endif // SQSTD_ENABLE_DYNLIB
 
 static char PACKAGE_ID;
 static char SEARCHERS_ARRAY_ID;
 static char LOADED_TABLE_ID;
+static char PATH_ARRAY_ID;
+#ifdef SQSTD_ENABLE_DYNLIB
+static char CPATH_ARRAY_ID;
+#endif // SQSTD_ENABLE_DYNLIB
 
 static const SQSTDPackageList *builtin_packages = 0;
 
@@ -148,25 +162,101 @@ struct GetStrElems
     }
 };
 
-static SQFILE search_path(HSQUIRRELVM v)
+static SQRESULT add_path( HSQUIRRELVM v, SQInteger path_idx, const SQChar **suffixes)
 {
-    GetStrElems els(v, -1, PATH_SEP_CHAR);              // path_to_search
-    while( els.push_next(v))                            // path_to_search, filename
+    // element
+    if( path_idx < 0) path_idx = sq_gettop(v) + path_idx + 1;
+    const SQChar *elem;
+    SQInteger elem_len;
+    SQInteger ins_idx = 0;
+    if( SQ_FAILED(sq_getstringandsize(v,-1,&elem,&elem_len)))
     {
+        sq_poptop(v);           // [element]
+        return SQ_ERROR;
+    }
+    while( (elem_len > 0) &&
+           (elem[elem_len-1] == DIR_SEP_CHAR)
+    ) elem_len--;
+    while( *suffixes) {
+        const SQChar *sfx = *suffixes;
+        SQInteger sfx_len = scstrlen(sfx);
+        SQChar *cat = sq_getscratchpad(v,sizeof(SQChar)*(elem_len+sfx_len+1));
+        memcpy(cat,elem,sizeof(SQChar)*elem_len);
+        memcpy(cat+elem_len,sfx,sizeof(SQChar)*(sfx_len+1));
+        sq_pushstring(v,cat,elem_len+sfx_len);                  // element, cat
+#ifdef _DEBUG
+        printf( "Add:%s\n", cat);
+#endif // _DEBUG
+        if(SQ_FAILED(sq_arrayinsert(v,path_idx,ins_idx))) {           // element, [cat]
+            sq_poptop(v);   // [element]
+            return SQ_ERROR;
+        }
+        ins_idx++;
+        suffixes++;
+    }
+    sq_poptop(v);           // [element]
+    return SQ_OK;
+}
+
+static SQRESULT add_path_array( HSQUIRRELVM v, SQInteger path_idx, const SQChar **suffixes)
+{
+    // array
+    if( path_idx < 0) path_idx = sq_gettop(v) + path_idx + 1;
+    SQInteger ar_len = sq_getsize(v,-1);
+    if( ar_len == -1) {
+        sq_poptop(v);                                   // [array]
+        return SQ_ERROR;
+    }
+    while(ar_len > 0) {
+        ar_len--;
+        sq_pushinteger(v,ar_len);                       // array, index
+        sq_rawget(v,-2);                                // array, [index], elem
+        if(SQ_FAILED(add_path(v,path_idx,suffixes))) {  // array, [elem]
+            sq_poptop(v);                               // [array]
+            return SQ_ERROR;
+        }
+    }
+    sq_poptop(v);                                       // [array]
+    return SQ_OK;
+}
+
+static SQRESULT add_path_delimed( HSQUIRRELVM v, SQInteger path_idx, const SQChar **suffixes, SQChar delimer)
+{
+    // path_elements
+    if( path_idx < 0) path_idx = sq_gettop(v) + path_idx + 1;
+    GetStrElems els(v, -1, delimer);                    // path_elements
+    sq_newarray(v,0);                                   // path_elements, tmp_array
+    while( els.push_next(v)) {                          // path_elements, tmp_array, element
+        sq_arrayappend(v,-2);                           // path_elements, tmp_array, [element]
+    }
+    sq_remove(v,-2);                                    // [path_elements], tmp_array
+    return add_path_array(v,path_idx,suffixes);
+}
+
+static SQFILE search_path(HSQUIRRELVM v, SQInteger path_idx)
+{
+    // name
+    if( path_idx < 0) path_idx = sq_gettop(v) + path_idx + 1;
+    sq_pushnull(v);                             // name, iter
+    while(SQ_SUCCEEDED(sq_next(v,path_idx))) {  // name, iter, p_idx, p_value
         const SQChar *filename;
+        sq_remove(v,-2);                        // name, iter, [p_idx], p_value
+        sq_push(v,-3);                          // name, iter, p_value, name
+        replace_char(v, PATH_REPLACE_CHAR);     // name, iter, [p_value, name], filename
         sq_getstring(v,-1,&filename);
 #ifdef _DEBUG
         scprintf("Try:%s\n",filename);
 #endif // _DEBUG
         SQFILE file = sqstd_fopen(filename,_SC("rb"));
         if( file) {
-            sq_remove(v,-2);                            // [path_to_search], filename
-            return file;                                // filename
+            sq_remove(v,-2);                    // name, [iter], filename
+            sq_remove(v,-2);                    // [name], filename
+            return file;                        // filename
         }
-        sq_poptop(v);                                   // path_to_search, [filename]
+        sq_poptop(v);                           // name, iter, [filename]
     }
-    sq_poptop(v);                                       // [path_to_search]
-    return 0;                                           //
+    sq_pop(v,2);                                // [name, iter]
+    return 0;
 }
 
 /* ----------------
@@ -195,74 +285,71 @@ static SQInteger package_search_builtin(HSQUIRRELVM v)
     return 0;
 }
 
-static const SQChar _dots_repl[2] = { DIR_SEP_CHAR, _SC('\0') };
+static SQRESULT get_package_path( HSQUIRRELVM v)
+{
+    sq_pushregistrytable(v);                            // registry
+    sq_pushuserpointer(v,&PATH_ARRAY_ID);               // registry, PATH_ARRAY_ID
+    if(SQ_FAILED(sq_rawget(v,-2))) {                    // registry, [PATH_ARRAY_ID], path_array
+        sq_poptop(v);                                   // [registry]
+        return SQ_ERROR;                                //
+    }
+    sq_remove(v,-2);                                    // [registry], path_array
+    return SQ_OK;
+}
 
 static SQInteger package_search_nut(HSQUIRRELVM v)
 {
     // root, pkg_name
     SQFILE file;
-    sq_pushregistrytable(v);                            // registry
-    sq_pushuserpointer(v,&PACKAGE_ID);                  // registry, PACKAGE_ID
-    if(SQ_FAILED(sq_rawget(v,-2))) {                    // registry, package
-        sq_poptop(v);                                   // [registry]
-        return SQ_ERROR;                                //
-    }
-    sq_remove(v,-2);                                    // [registry], package
-    sq_pushstring(v, _SC("PATH"),-1);                   // package, "PATH"
-    if(SQ_FAILED(sq_rawget(v,-2))) {                    // package, path
-        sq_poptop(v);                                   // [package]
-        return SQ_ERROR;                                //
-    }
-    sq_remove(v,-2);                                    // [package], path
+    if( SQ_FAILED(get_package_path(v))) return SQ_ERROR;
     sq_push(v,2);                                       // path, pkg_name
-    sq_pushstring(v,_dots_repl,-1);                     // path, pkg_name, dots_repl
+    sq_pushstring(v,DIR_SEP_STRING,-1);                 // path, pkg_name, dots_repl
     replace_char(v, _SC('.'));                          // path, search_name
-    replace_char(v, PATH_REPLACE_CHAR);                 // path_to_search
-    file = search_path(v);
-    if( file) {                                         // filename
+    file = search_path(v,-2);
+    if( file) {                                         // path, filename
         const SQChar *filename;
         SQRESULT r;
         sq_getstring(v,-1,&filename);
         r = sqstd_loadstream(v,file,filename,SQTrue);
         sqstd_fclose( file);
         if(SQ_FAILED(r)) {
-            sq_poptop(v);                               // [path_to_search, filename]
+            sq_pop(v,2);                                // [path, filename]
             return sq_throwerror(v,_SC("failed to load package"));  //
         }
-        sq_remove(v,-2);                                // [filename], closure
+        sq_remove(v,-2);                                // path, [filename], closure
+        sq_remove(v,-2);                                // [path], closure
         return 1;
     }
+    sq_poptop(v);                                       // [path]
     return 0;
 }
 
-#ifdef SQ_ENABLE_DYNLIB
+#ifdef SQSTD_ENABLE_DYNLIB
+static SQRESULT get_package_cpath( HSQUIRRELVM v)
+{
+    sq_pushregistrytable(v);                            // registry
+    sq_pushuserpointer(v,&CPATH_ARRAY_ID);              // registry, CPATH_ARRAY_ID
+    if(SQ_FAILED(sq_rawget(v,-2))) {                    // registry, [CPATH_ARRAY_ID], cpath_array
+        sq_poptop(v);                                   // [registry]
+        return SQ_ERROR;                                //
+    }
+    sq_remove(v,-2);                                    // [registry], cpath_array
+    return SQ_OK;
+}
+
 static SQInteger package_search_c(HSQUIRRELVM v)
 {
     // root, pkg_name
     SQFILE file = 0;
     const SQChar *pkg_name;
     SQInteger pkg_dot;
-    sq_pushregistrytable(v);                            // registry
-    sq_pushuserpointer(v,&PACKAGE_ID);                  // registry, PACKAGE_ID
-    if(SQ_FAILED(sq_rawget(v,-2))) {                    // registry, package
-        sq_poptop(v);                                   // [registry]
-        return SQ_ERROR;                                //
-    }
-    sq_remove(v,-2);                                    // [registry], package
-    sq_pushstring(v, _SC("CPATH"),-1);                  // package, "CPATH"
-    if(SQ_FAILED(sq_rawget(v,-2))) {                    // package, cpath
-        sq_poptop(v);                                   // [package]
-        return SQ_ERROR;                                //
-    }
-    sq_remove(v,-2);                                    // [package], cpath
+    if(SQ_FAILED(get_package_cpath(v))) return SQ_ERROR;
     sq_getstringandsize(v,2,&pkg_name,&pkg_dot);
 	do {												// cpath
-		sq_push(v,-1);									// cpath, cpath
-        sq_pushstring(v, pkg_name, pkg_dot);            // cpath, cpath, pkg_name
-        sq_pushstring(v,_dots_repl,-1);                 // cpath, cpath, pkg_name, dots_repl
-        replace_char(v, _SC('.'));                      // cpath, cpath, search_name
-        replace_char(v, PATH_REPLACE_CHAR);             // cpath, path_to_search
-        file = search_path(v);
+        sq_pushstring(v, pkg_name, pkg_dot);            // cpath, pkg_name
+        sq_pushstring(v,DIR_SEP_STRING,-1);             // cpath, pkg_name, dots_repl
+        replace_char(v, _SC('.'));                      // cpath, search_name
+        file = search_path(v,-2);
 		if( file) break;								// cpath, filename
 		pkg_dot--;
 		while((pkg_dot > 0) && (pkg_name[pkg_dot] != _SC('.'))) pkg_dot--;
@@ -300,7 +387,7 @@ static SQInteger package_search_c(HSQUIRRELVM v)
 		return 0;
 	}
 }
-#endif // SQ_ENABLE_DYNLIB
+#endif // SQSTD_ENABLE_DYNLIB
 
 static SQInteger run_searchers(HSQUIRRELVM v, SQInteger idx)
 {
@@ -356,15 +443,25 @@ static SQInteger load_package(HSQUIRRELVM v, SQInteger idx)
 
 static SQChar _recursive_require[] = _SC("recursive require");
 
+static SQRESULT get_loaded_table( HSQUIRRELVM v)
+{
+    sq_pushregistrytable(v);                            // registry
+    sq_pushuserpointer(v,&LOADED_TABLE_ID);             // registry, LOADED_TABLE_ID
+    if(SQ_FAILED(sq_rawget(v,-2))) {                    // registry, [LOADED_TABLE_ID], loaded_table
+        sq_poptop(v);                                   // [registry]
+        return SQ_ERROR;                                //
+    }
+    sq_remove(v,-2);                                    // [registry], loaded_table
+    return SQ_OK;
+}
+
+
 static SQInteger require( HSQUIRRELVM v, SQInteger idx)
 {
     if( idx < 0) idx = sq_gettop(v) + idx + 1;
-    sq_pushregistrytable(v);                            // registry
-    sq_pushuserpointer(v,&LOADED_TABLE_ID);             // registry, LOADED_ID
-    if(SQ_FAILED(sq_rawget(v,-2))) return SQ_ERROR;     // registry, loaded_table
-    sq_remove(v,-2);                                    // [registry], loaded_table
+    if(SQ_FAILED(get_loaded_table(v))) return SQ_ERROR; // loaded_table
     sq_push(v,idx);                                     // loaded_table, pkg_name
-    if(SQ_FAILED(sq_rawget(v,-2))) {                    // loaded_table
+    if(SQ_FAILED(sq_rawget(v,-2))) {                    // loaded_table, [pkg_name]
         SQInteger res;
         // mark package for recursion
         sq_push(v,idx);                                 // loaded_table, pkg_name
@@ -414,10 +511,7 @@ static SQInteger require( HSQUIRRELVM v, SQInteger idx)
 
 SQRESULT sqstd_package_registerfct( HSQUIRRELVM v, const SQChar *package, SQFUNCTION fct)
 {
-    sq_pushregistrytable(v);                            // registry
-    sq_pushuserpointer(v,&LOADED_TABLE_ID);             // registry, LOADED_ID
-    if(SQ_FAILED(sq_rawget(v,-2))) return SQ_ERROR;     // registry, loaded_table
-    sq_remove(v,-2);                                    // [registry], loaded_table
+    if(SQ_FAILED(get_loaded_table(v))) return SQ_ERROR; // loaded_table
     sq_pushstring(v,package,-1);                        // loaded_table, package_name
     if(SQ_FAILED(sq_rawget(v,-2)))                      // loaded_table, package_name
     {
@@ -455,6 +549,26 @@ SQRESULT sqstd_package_require(HSQUIRRELVM v, const SQChar *package)
         return SQ_ERROR;
 }
 
+SQRESULT sqstd_package_addpath( HSQUIRRELVM v, const SQChar *path)
+{
+    if(SQ_FAILED(get_package_path(v))) return SQ_ERROR; // PATH
+    sq_pushstring(v,path,-1);                           // PATH, path
+    SQRESULT r = add_path(v,-2,nut_suffixes);           // PATH, [path]
+    sq_poptop(v);                                       // [PATH]
+    return r;
+}
+
+#ifdef SQSTD_ENABLE_DYNLIB
+SQRESULT sqstd_package_addcpath( HSQUIRRELVM v, const SQChar *path)
+{
+    if(SQ_FAILED(get_package_cpath(v))) return SQ_ERROR;// CPATH
+    sq_pushstring(v,path,-1);                           // CPATH, path
+    SQRESULT r = add_path(v,-2,c_suffixes);             // CPATH, [path]
+    sq_poptop(v);                                       // [CPATH]
+    return r;
+}
+#endif // SQSTD_ENABLE_DYNLIB
+
 /* ----------------
 ---------------- */
 
@@ -469,6 +583,40 @@ static SQInteger _g_package_require( HSQUIRRELVM v)
     else
         return SQ_ERROR;
 }
+
+static SQInteger _package_addpath( HSQUIRRELVM v)
+{
+    // self, arg
+    SQInteger res;
+    if(SQ_FAILED(get_package_path(v))) return SQ_ERROR; // self, arg, PATH
+    sq_push(v,-2);                                      // self, arg, PATH, arg
+    sq_remove(v,-3);                                    // self, [arg], PATH, arg
+    if(sq_gettype(v,-1) == OT_ARRAY) {
+        res = add_path_array(v,-2,nut_suffixes);        // self, PATH, [arg]
+    }
+    else {
+        res = add_path(v,-2,nut_suffixes);              // self, PATH, [arg]
+    }
+    return res == SQ_OK ? 0 : SQ_ERROR;
+}
+
+#ifdef SQSTD_ENABLE_DYNLIB
+static SQInteger _package_addcpath( HSQUIRRELVM v)
+{
+    // self, arg
+    SQInteger res;
+    if(SQ_FAILED(get_package_cpath(v))) return SQ_ERROR;// self, arg, PATH
+    sq_push(v,-2);                                      // self, arg, PATH, arg
+    sq_remove(v,-3);                                    // self, [arg], PATH, arg
+    if(sq_gettype(v,-1) == OT_ARRAY) {
+        res = add_path_array(v,-2,c_suffixes);          // self, PATH, [arg]
+    }
+    else {
+        res = add_path(v,-2,c_suffixes);                // self, PATH, [arg]
+    }
+    return res == SQ_OK ? 0 : SQ_ERROR;
+}
+#endif // SQSTD_ENABLE_DYNLIB
 
 static SQInteger _package_replacechar(HSQUIRRELVM v)
 {
@@ -495,7 +643,8 @@ static SQInteger _package_pathsplit(HSQUIRRELVM v)
 
 static SQInteger _package_pathsearch(HSQUIRRELVM v)
 {
-    SQFILE file = search_path(v);
+    // self, path_array, name
+    SQFILE file = search_path(v,2);
     if( file) {
         sqstd_fclose( file);
     }
@@ -513,8 +662,12 @@ static const SQRegFunction g_package_funcs[]={
 
 #define _DECL_PACKAGE_FUNC(name,nparams,typecheck) {_SC(#name),_package_##name,nparams,typecheck}
 static const SQRegFunction package_funcs[]={
+    _DECL_PACKAGE_FUNC(addpath,2,_SC(".s|a")),
+#ifdef SQSTD_ENABLE_DYNLIB
+    _DECL_PACKAGE_FUNC(addcpath,2,_SC(".s|a")),
+#endif // SQSTD_ENABLE_DYNLIB
     _DECL_PACKAGE_FUNC(pathsplit,3,_SC(".si")),
-    _DECL_PACKAGE_FUNC(pathsearch,2,_SC(".s")),
+    _DECL_PACKAGE_FUNC(pathsearch,3,_SC(".as")),
     _DECL_PACKAGE_FUNC(replacechar,4,_SC(".ssi")),
     {NULL,(SQFUNCTION)0,0,NULL}
 };
@@ -527,11 +680,11 @@ static void fill_searchers(HSQUIRRELVM v)
     sq_newclosure(v,package_search_nut,0);  // array, closure
     sq_setnativeclosurename(v,-1,_SC("search_package_nut"));
     sq_arrayappend(v,-2);                   // array, [closure]
-#ifdef SQ_ENABLE_DYNLIB
+#ifdef SQSTD_ENABLE_DYNLIB
     sq_newclosure(v,package_search_c,0);    // array, closure
     sq_setnativeclosurename(v,-1,_SC("search_package_c"));
     sq_arrayappend(v,-2);                   // array, [closure]
-#endif // SQ_ENABLE_DYNLIB
+#endif // SQSTD_ENABLE_DYNLIB
 }
 
 SQRESULT sqstd_register_packagelib(HSQUIRRELVM v)
@@ -570,36 +723,60 @@ SQRESULT sqstd_register_packagelib(HSQUIRRELVM v)
     // registry.SEARCHERS_ID = searchers_array
     sq_rawset(v,-4);                            // registry, package, [SEARCHERS_ID, searchers_array]
 
-    sq_remove(v,-2);                            // [registry], package
-
-    sq_pushstring(v,_SC("PATH"),-1);            // package, "PATH"
-    sq_pushstring(v,SQ_PACKAGE_PATH_ENV,-1);    // package, "PATH", "SQ_PATH"
-    sqstd_system_getenv(v);                     // package, "PATH", ["SQ_PATH"]
-    if( sq_gettype(v,-1) == OT_NULL) {          // package, "PATH", path_value
-        sq_poptop(v);                           // package, "PATH", [path_value]
-        sq_pushstring(v,SQ_PACKAGE_DEFAULT_PATH,-1); // package, "PATH", def_path_value
+    sq_pushuserpointer(v,&PATH_ARRAY_ID);       // registry, package, PATH_ARRAY_ID
+    sq_newarray(v,0);                           // registry, package, PATH_ARRAY_ID, path_array
+    sq_pushstring(v,SQ_PACKAGE_PATH_ENV,-1);    // registry, package, PATH_ARRAY_ID, path_array, "SQ_PATH"
+    sqstd_system_getenv(v);                     // registry, package, PATH_ARRAY_ID, path_array, ["SQ_PATH"], path_value
+    if( sq_gettype(v,-1) == OT_STRING) {        // registry, package, PATH_ARRAY_ID, path_array, path_value
+#ifdef _DEBUG
+        const SQChar *tmp;
+        sq_getstring(v,-1,&tmp);
+        printf( "PATH:%s\n", tmp);
+#endif // _DEBUG
+        add_path_delimed(v,-2,nut_suffixes,PATH_LIST_SEP_CHAR);
     }
-    // package.PATH <- path_value
-    sq_rawset(v,-3);                            // package, ["PATH", path_value]
-
-#ifdef SQ_ENABLE_DYNLIB
-    sq_pushstring(v,_SC("CPATH"),-1);           // package, "CPATH"
-    sq_pushstring(v,SQ_PACKAGE_CPATH_ENV,-1);   // package, "CPATH", "SQ_CPATH"
-    sqstd_system_getenv(v);                     // package, "CPATH", "SQ_PATH"
-    if( sq_gettype(v,-1) == OT_NULL) {          // package, "CPATH", cpath_value
-        sq_poptop(v);                           // package, "CPATH", [cpath_value]
-        sq_pushstring(v,SQ_PACKAGE_DEFAULT_CPATH,-1); // package, "CPATH", def_cpath_value
+    else {
+        sq_poptop(v);                           // registry, package, PATH_ARRAY_ID, path_array, [path_value]
     }
-    // package.CPATH <- cpath_value
-    sq_rawset(v,-3);                            // package, ["CPATH", cpath_value]
-#endif // SQ_ENABLE_DYNLIB
+    sq_pushstring(v,_SC("PATH"),-1);            // registry, package, PATH_ARRAY_ID, path_array, "PATH"
+    sq_push(v,-2);                              // registry, package, PATH_ARRAY_ID, path_array, "PATH", path_array
+    // package.PATH <- path_array
+    sq_rawset(v,-5);                            // registry, package, PATH_ARRAY_ID, path_array, ["PATH", path_array]
+    // registry.PATH_ARRAY_ID = path_array
+    sq_rawset(v,-4);                            // registry, package, [PATH_ARRAY_ID, path_array]
 
-    sq_poptop(v);                               // [package]
+
+#ifdef SQSTD_ENABLE_DYNLIB
+    sq_pushuserpointer(v,&CPATH_ARRAY_ID);      // registry, package, CPATH_ARRAY_ID
+    sq_newarray(v,0);                           // registry, package, CPATH_ARRAY_ID, cpath_array
+    sq_pushstring(v,SQ_PACKAGE_CPATH_ENV,-1);   // registry, package, CPATH_ARRAY_ID, cpath_array, "SQ_CPATH"
+    sqstd_system_getenv(v);                     // registry, package, CPATH_ARRAY_ID, cpath_array, ["SQ_PATH"], cpath_value
+    if( sq_gettype(v,-1) == OT_STRING) {        // registry, package, CPATH_ARRAY_ID, cpath_array, cpath_value
+#ifdef _DEBUG
+        const SQChar *tmp;
+        sq_getstring(v,-1,&tmp);
+        printf( "CPATH:%s\n", tmp);
+#endif // _DEBUG
+        add_path_delimed(v,-2,c_suffixes,PATH_LIST_SEP_CHAR);
+    }
+    else {
+        sq_poptop(v);                           // registry, package, CPATH_ARRAY_ID, cpath_array, [path_value]
+    }
+    sq_pushstring(v,_SC("CPATH"),-1);           // registry, package, CPATH_ARRAY_ID, cpath_array, "CPATH"
+    sq_push(v,-2);                              // registry, package, CPATH_ARRAY_ID, cpath_array, "CPATH", cpath_array
+    // package.CPATH <- cpath_array
+    sq_rawset(v,-5);                            // registry, package, CPATH_ARRAY_ID, cpath_array, ["CPATH", cpath_array]
+    // registry.CPATH_ARRAY_ID = cpath_array
+    sq_rawset(v,-4);                            // registry, package, [CPATH_ARRAY_ID, cpath_array]
+#endif // SQSTD_ENABLE_DYNLIB
+
+    sq_pop(v,2);                                // [registry, package]
+
 	sqstd_registerfunctions(v, g_package_funcs);
     
-#ifdef SQ_ENABLE_DYNLIB
-    if( SQFAILED(sqstd_register_dynlib(v))) return SQ_ERROR;
-#endif // SQ_ENABLE_DYNLIB
+#ifdef SQSTD_ENABLE_DYNLIB
+    if( SQ_FAILED(sqstd_register_dynlib(v))) return SQ_ERROR;
+#endif // SQSTD_ENABLE_DYNLIB
     
     return SQ_OK;
 }

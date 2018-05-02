@@ -40,4 +40,5 @@ THE SOFTWARE.
    stdstreamiolib.rst
    stdtextiolib.rst
    stdpackagelib.rst
+   stddynlib.rst
 

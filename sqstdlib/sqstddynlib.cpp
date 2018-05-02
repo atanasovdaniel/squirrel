@@ -24,7 +24,7 @@ THE SOFTWARE.
 #include <sqstdaux.h>
 #include <sqstdpackage.h>
 
-#ifdef SQ_ENABLE_DYNLIB
+#ifdef SQSTD_ENABLE_DYNLIB
 
 #include <sqstddynlib.h>
 
@@ -378,7 +378,7 @@ SQInteger sqstd_load_dynlib(HSQUIRRELVM v)
     sq_push(v,-1);                              // dynlib, registry, LOADEDLIBS_ID, cloaded_table, cloaded_table
     // dynlib.LOADEDLIBS = LOADEDLIBS
 	sq_setbyhandle(v,-5,&dynlib__LOADEDLIBS_handle); // dynlib, registry, LOADEDLIBS_ID, cloaded_table, [cloaded_table]
-    // registry.CLOADED_ID = CLOADED
+    // registry.LOADEDLIBS_TABLE_ID = CLOADED
     sq_rawset(v,-3);                            // dynlib, registry, [CLOADED_ID, cloaded_table]
     
     sq_poptop(v);                               // dynlib, [registry]
@@ -395,4 +395,4 @@ SQRESULT sqstd_register_dynlib(HSQUIRRELVM v)
     return SQ_ERROR;
 }
 
-#endif // SQ_ENABLE_DYNLIB
+#endif // SQSTD_ENABLE_DYNLIB

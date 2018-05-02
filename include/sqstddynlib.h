@@ -19,10 +19,11 @@ SQUIRREL_API SQRESULT sqstd_dynlib_load(HSQUIRRELVM v, const SQChar *path, SQBoo
 SQUIRREL_API SQRESULT sqstd_dynlib_sym(HSQUIRRELVM v,SQDYNLIB lib, const SQChar *sym_name, SQUserPointer *psym);
 SQUIRREL_API SQRESULT sqstd_dynlib_register(HSQUIRRELVM v, SQDYNLIB lib, const SQChar *path);
 
+SQUIRREL_API SQInteger sqstd_load_dynlib(HSQUIRRELVM v)
 SQUIRREL_API SQRESULT sqstd_register_dynlib(HSQUIRRELVM v);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif // _SQSTD_PACKAGE_H_
+#endif // _SQSTD_DYNLIB_H_
