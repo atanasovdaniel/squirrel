@@ -12,13 +12,13 @@
 
 // basic stream API
 
-SQInteger sqstd_sread(SQUserPointer buffer, SQInteger size, SQSTREAM stream)
+SQInteger sqstd_sread(void *buffer, SQInteger size, SQSTREAM stream)
 {
 	SQStream *self = (SQStream *)stream;
 	return self->Read( buffer, size);
 }
 
-SQInteger sqstd_swrite(SQUserPointer buffer, SQInteger size, SQSTREAM stream)
+SQInteger sqstd_swrite(const void *buffer, SQInteger size, SQSTREAM stream)
 {
 	SQStream *self = (SQStream *)stream;
 	return self->Write( buffer, size);
@@ -68,13 +68,13 @@ SQInteger __sqstd_stream_releasehook(SQUserPointer p, SQInteger SQ_UNUSED_ARG(si
     return 1;
 }
 
-SQInteger sqstd_STREAMWRITEFUNC(SQUserPointer user,SQUserPointer buf,SQInteger size)
+SQInteger sqstd_STREAMWRITEFUNC(SQUserPointer user,const void *buf,SQInteger size)
 {
 	SQFILE s = (SQSTREAM)user;
     return sqstd_swrite( buf, size, s);
 }
 
-SQInteger sqstd_STREAMREADFUNC(SQUserPointer user,SQUserPointer buf,SQInteger size)
+SQInteger sqstd_STREAMREADFUNC(SQUserPointer user,void *buf,SQInteger size)
 {
 	SQFILE s = (SQSTREAM)user;
     return sqstd_sread( buf, size, s);

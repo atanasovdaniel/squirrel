@@ -29,8 +29,8 @@ SQUIRREL_API SQUserPointer _sqstd_stream_type_tag(void);
 
 typedef void *SQSTREAM;
 
-SQUIRREL_API SQInteger sqstd_sread(SQUserPointer, SQInteger, SQSTREAM);
-SQUIRREL_API SQInteger sqstd_swrite(SQUserPointer, SQInteger, SQSTREAM);
+SQUIRREL_API SQInteger sqstd_sread(void*, SQInteger, SQSTREAM);
+SQUIRREL_API SQInteger sqstd_swrite(const void*, SQInteger, SQSTREAM);
 SQUIRREL_API SQInteger sqstd_sseek(SQSTREAM , SQInteger , SQInteger);
 SQUIRREL_API SQInteger sqstd_stell(SQSTREAM);
 SQUIRREL_API SQInteger sqstd_sflush(SQSTREAM);
@@ -40,8 +40,8 @@ SQUIRREL_API void sqstd_srelease(SQSTREAM);
 
 SQUIRREL_API SQInteger __sqstd_stream_releasehook(SQUserPointer p, SQInteger SQ_UNUSED_ARG(size));
 
-SQUIRREL_API SQInteger sqstd_STREAMWRITEFUNC(SQUserPointer user,SQUserPointer buf,SQInteger size);
-SQUIRREL_API SQInteger sqstd_STREAMREADFUNC(SQUserPointer user,SQUserPointer buf,SQInteger size);
+SQUIRREL_API SQInteger sqstd_STREAMWRITEFUNC(SQUserPointer user,const void *buf,SQInteger size);
+SQUIRREL_API SQInteger sqstd_STREAMREADFUNC(SQUserPointer user,void *buf,SQInteger size);
 
 SQUIRREL_API SQRESULT sqstd_compilestream(HSQUIRRELVM v,SQSTREAM stream,const SQChar *sourcename,SQBool raiseerror);
 SQUIRREL_API SQRESULT sqstd_writeclosuretostream(HSQUIRRELVM vm,SQSTREAM stream);

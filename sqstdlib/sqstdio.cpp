@@ -100,7 +100,7 @@ SQInteger sqstd_fread(void* buffer, SQInteger size, SQInteger count, SQFILE file
     return ret;
 }
 
-SQInteger sqstd_fwrite(SQUserPointer buffer, SQInteger size, SQInteger count, SQFILE file)
+SQInteger sqstd_fwrite(const void *buffer, SQInteger size, SQInteger count, SQFILE file)
 {
     SQFile *self = (SQFile*)file;
 	SQInteger ret = self->Write( buffer, size * count);
