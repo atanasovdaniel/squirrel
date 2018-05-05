@@ -317,10 +317,6 @@ int main(int argc, char* argv[])
     _CrtSetAllocHook(MemAllocHook);
 #endif
 
-#ifdef SQ_HAVE_BUILTIN_PACKAGES
-    sqstd_package_addbuiltins(sq_builtin_packages);
-#endif // SQ_HAVE_BUILTIN_PACKAGES
-
     v=sq_open(1024);
     sq_setprintfunc(v,printfunc,errorfunc);
 
@@ -335,6 +331,10 @@ int main(int argc, char* argv[])
     sqstd_register_stringlib(v);
     sqstd_register_streamiolib(v);
     sqstd_register_textiolib(v);
+
+#ifdef SQ_HAVE_BUILTIN_PACKAGES
+    sqstd_package_addbuiltins(v, sq_builtin_packages);
+#endif // SQ_HAVE_BUILTIN_PACKAGES
 
     //aux library
     //sets error handlers

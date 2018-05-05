@@ -10,7 +10,7 @@ typedef struct tagSQSTDPackageList {
     SQFUNCTION fct;
 } SQSTDPackageList;
 
-SQUIRREL_API void sqstd_package_addbuiltins( const SQSTDPackageList *list);
+SQUIRREL_API void sqstd_package_addbuiltins( HSQUIRRELVM v, const SQSTDPackageList *list);
 
 SQUIRREL_API SQRESULT sqstd_package_require(HSQUIRRELVM v, const SQChar *package);
 SQUIRREL_API SQRESULT sqstd_package_registerfct( HSQUIRRELVM v, const SQChar *package, SQFUNCTION fct);

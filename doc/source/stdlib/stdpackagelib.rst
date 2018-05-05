@@ -180,8 +180,9 @@ C API
     
     Add path to be searched for C packages (if dynlib if enabled). New added paths are searched first.
 
-.. c:function:: void sqstd_package_addbuiltins( const SQSTDPackageList *list)
+.. c:function:: void sqstd_package_addbuiltins( HSQUIRRELVM v, const SQSTDPackageList *list)
 
+    :param HSQUIRRELVM v: the target VM
     :param SQSTDPackageList* list: list of packages
     
     Add list of builtin packages.

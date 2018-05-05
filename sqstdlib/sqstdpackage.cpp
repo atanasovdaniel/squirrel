@@ -263,7 +263,7 @@ static SQFILE search_path(HSQUIRRELVM v, SQInteger path_idx)
     searchers
 ---------------- */
 
-void sqstd_package_addbuiltins( const SQSTDPackageList *list)
+void sqstd_package_addbuiltins(SQ_UNUSED_ARG(HSQUIRRELVM v), const SQSTDPackageList *list)
 {
     builtin_packages = list;
 }
@@ -773,10 +773,10 @@ SQRESULT sqstd_register_packagelib(HSQUIRRELVM v)
     sq_pop(v,2);                                // [registry, package]
 
 	sqstd_registerfunctions(v, g_package_funcs);
-    
+
 #ifdef SQSTD_ENABLE_DYNLIB
     if( SQ_FAILED(sqstd_register_dynlib(v))) return SQ_ERROR;
 #endif // SQSTD_ENABLE_DYNLIB
-    
+
     return SQ_OK;
 }
