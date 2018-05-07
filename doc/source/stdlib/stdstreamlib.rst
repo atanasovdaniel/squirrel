@@ -193,7 +193,7 @@ The stream class
 
     The stream object is represented by opaque structure SQSTREAM.
 
-.. c:function:: SQInteger sqstd_sread(void* buffer, SQInteger size, SQSTREAM file)
+.. c:function:: SQInteger sqstd_sread(void *buffer, SQInteger size, SQSTREAM stream)
 
     :param void* buffer: buffer to read to
     :param SQInteger size: size in bytes to read from the stream
@@ -202,9 +202,9 @@ The stream class
     
     Reads `size` bytes from `stream` and stores them to `buffer`.
 	
-.. c:function:: SQInteger sqstd_swrite(const SQUserPointer buffer, SQInteger size, SQSTREAM stream)
+.. c:function:: SQInteger sqstd_swrite(const void *buffer, SQInteger size, SQSTREAM stream)
 
-    :param const void* buffer: buffer with data to be writen
+    :param void* buffer: buffer with data to be writen
     :param SQInteger size: size in bytes to write from to stream
     :param SQSTREAM stream: the stream to write to
 	:returns: the number of bytes writen or 0 on error

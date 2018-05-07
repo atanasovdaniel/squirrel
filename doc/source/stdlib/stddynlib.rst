@@ -10,9 +10,9 @@ The dynlib library provides functionality to dynamicaly load libraryed (.so or .
 Squirrel API
 --------------
 
-++++++++++++++++++++++++
-The package.dynlib class
-++++++++++++++++++++++++
+++++++++++++++++
+The dynlib class
+++++++++++++++++
 
 The dynlib class uses native API to load dynamic libraryes.
 On WINDOWS platform it uses `LoadLibrary` to load Dynamic-link library (or .DLL).
@@ -22,10 +22,10 @@ Loaded libraryes are stored in two places (if they are not loaded as private):
 
 1.  In static member `dynlib.LOADEDLIBS` table where libraryes are stored by library file path name. So already loaded libraryes can be reused.
 
-2.  In internal (registry table key `LOADEDLIBS_TABLE_ID`) linked list. So first loaded library is unloaded last.
+2.  In internal (registry table key `CCHAIN`) linked list. So first loaded library is unloaded last.
 
 The libraryes loaded by `is_private` == true, are always loaded (by call to dlopen/LoadLibrary) and are not stored in any internal list.
-So they are unloaded when `dynlib` instance is released. A call to `dynlib.register` explicitly adds private library to `CCHAIN` and `package.CLOADED`.
+So they are unloaded when `dynlib` instance is released. A call to `dynlib.register` explicitly adds private library to `CCHAIN` and `dynlib.LOADEDLIBS`.
 
 .. js:class:: dynlib(path, [is_private])
 
@@ -34,7 +34,7 @@ So they are unloaded when `dynlib` instance is released. A call to `dynlib.regis
 
     Loads a dynamic library `path`.
     
-    If `is_private` == false (default), `package.dynlib` first checks in `package.CLOADED` for already loaded library.
+    If `is_private` == false (default), `dynlib` first checks in `dynlib.LOADEDLIBS` for already loaded library.
     Then new library is loaded.
     
     If `is_private` == true, library is loaded always.
@@ -125,7 +125,7 @@ The dynamic library is represented by opaque handle `SQDYNLIB`.
     :param SQDYNLIB* plib: Output, handle to library
     :returns: an SQRESULT
     
-    Loads dynamic library `path` using mechanisms of `package.CLOADED` and `CCHAIN` to load and register library.
+    Loads dynamic library `path` using mechanisms of `dynlib.LOADEDLIBS` and `CCHAIN` to load and register library.
 
 .. c:function:: SQRESULT sqstd_dynlib_sym(HSQUIRRELVM v,SQDYNLIB lib, const SQChar *sym_name, SQUserPointer *psym)
 
