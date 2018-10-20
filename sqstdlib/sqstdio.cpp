@@ -3,17 +3,35 @@
 #include <stdio.h>
 #include <squirrel.h>
 #include <sqstdio.h>
+#include <sqcvoschar.h>
 #include "sqstdstream.h"
 
 #define SQSTD_FILE_TYPE_TAG ((SQUnsignedInteger)(SQSTD_STREAM_TYPE_TAG | 0x00000001))
 //basic API
 SQFILE sqstd_fopen(const SQChar *filename ,const SQChar *mode)
 {
-#ifndef SQUNICODE
-    return (SQFILE)fopen(filename,mode);
+    const SQChar *sc[2];
+    SQUnsignedInteger allocated;
+    sc[0] = filename;
+    sc[1] = mode;
+    const scoschar_t **oc = sccvtoos( sc, 2, &allocated);
+    if( oc) {
+#ifdef _WIN32
+        SQFILE fh = (SQFILE)_wfopen(oc[0],oc[1]);
 #else
-    return (SQFILE)_wfopen(filename,mode);
+        SQFILE fh = fopen(oc[0],oc[1]);
 #endif
+        if( allocated) {
+            sq_free( oc, allocated);
+        }
+        return fh;
+    }
+    return 0;
+//#ifndef SQUNICODE
+//    return (SQFILE)fopen(filename,mode);
+//#else
+//    return (SQFILE)_wfopen(filename,mode);
+//#endif
 }
 
 SQInteger sqstd_fread(void* buffer, SQInteger size, SQInteger count, SQFILE file)

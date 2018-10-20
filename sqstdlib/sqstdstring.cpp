@@ -57,10 +57,20 @@ static SQInteger validate_format(HSQUIRRELVM v, SQChar *fmt, const SQChar *src, 
 
         }
     }
-    if (n-start > MAX_FORMAT_LEN )
-        return sq_throwerror(v,_SC("format too long"));
-    memcpy(&fmt[1],&src[start],((n-start)+1)*sizeof(SQChar));
-    fmt[(n-start)+2] = '\0';
+    if( (src[n] == 's') || (src[n] == 'c')) {
+        size_t fsize = (src[n] == 's') ? sizeof( _SC("" SC_s_FMT)) : sizeof( _SC("" SC_c_FMT));
+        const SQChar *fstr = (src[n] == 's') ? _SC("" SC_s_FMT) : _SC("" SC_c_FMT);
+        if (n-start > (SQInteger)(MAX_FORMAT_LEN-fsize/sizeof(SQChar)) )
+            return sq_throwerror(v,_SC("format too long"));
+        memcpy(&fmt[1],&src[start],(n-start)*sizeof(SQChar));
+        memcpy(&fmt[1+n-start],fstr,fsize);
+    }
+    else {
+        if (n-start > MAX_FORMAT_LEN )
+            return sq_throwerror(v,_SC("format too long"));
+        memcpy(&fmt[1],&src[start],((n-start)+1)*sizeof(SQChar));
+        fmt[(n-start)+2] = '\0';
+    }
     return n;
 }
 

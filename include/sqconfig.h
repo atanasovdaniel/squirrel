@@ -84,7 +84,7 @@ typedef wchar_t SQChar;
 #else
 #define WCHAR_SIZE 4
 #define WCHAR_SHIFT_MUL 2
-#define MAX_CHAR 0xFFFFFFFF
+#define MAX_CHAR 0x00FFFFFF
 #endif
 
 #define _SC(a) L##a
@@ -100,6 +100,9 @@ typedef wchar_t SQChar;
 
 
 #define sq_rsl(l) ((l)<<WCHAR_SHIFT_MUL)
+
+#define SC_s_FMT    "ls"
+#define SC_c_FMT    "lc"
 
 #else
 typedef char SQChar;
@@ -135,6 +138,9 @@ typedef char SQChar;
 #define MAX_CHAR 0xFF
 
 #define sq_rsl(l) (l)
+
+#define SC_s_FMT    "s"
+#define SC_c_FMT    "c"
 
 #endif
 

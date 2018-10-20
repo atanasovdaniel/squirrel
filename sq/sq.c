@@ -16,13 +16,23 @@
 #include <sqstdmath.h>
 #include <sqstdstring.h>
 #include <sqstdaux.h>
+#include <sqcvoschar.h>
+#ifdef SQUNICODE
+#include "locale.h"
+#endif
 
 #ifdef SQUNICODE
 #define scfprintf fwprintf
 #define scvprintf vfwprintf
+#define scgetchar getwchar
+#define scint_t wint_t
+#define scEOF WEOF
 #else
 #define scfprintf fprintf
 #define scvprintf vfprintf
+#define scgetchar getchar
+#define scint_t int
+#define scEOF EOF
 #endif
 
 
@@ -64,7 +74,7 @@ void errorfunc(HSQUIRRELVM SQ_UNUSED_ARG(v),const SQChar *s,...)
 
 void PrintVersionInfos()
 {
-    scfprintf(stdout,_SC("%s %s (%d bits)\n"),SQUIRREL_VERSION,SQUIRREL_COPYRIGHT,((int)(sizeof(SQInteger)*8)));
+    scfprintf(stdout,_SC("%" SC_s_FMT " %" SC_s_FMT " (%d bits)\n"),SQUIRREL_VERSION,SQUIRREL_COPYRIGHT,((int)(sizeof(SQInteger)*8)));
 }
 
 void PrintUsage()
@@ -83,14 +93,11 @@ void PrintUsage()
 #define _DONE 2
 #define _ERROR 3
 //<<FIXME>> this func is a mess
-int getargs(HSQUIRRELVM v,int argc, char* argv[],SQInteger *retval)
+int getargs(HSQUIRRELVM v,int argc, const SQChar **argv,SQInteger *retval)
 {
     int i;
     int compiles_only = 0;
-#ifdef SQUNICODE
-    static SQChar temp[500];
-#endif
-    char * output = NULL;
+    const SQChar * output = NULL;
     *retval = 0;
     if(argc>1)
     {
@@ -125,7 +132,7 @@ int getargs(HSQUIRRELVM v,int argc, char* argv[],SQInteger *retval)
                     return _DONE;
                 default:
                     PrintVersionInfos();
-                    scprintf(_SC("unknown prameter '-%c'\n"),argv[arg][1]);
+                    scprintf(_SC("unknown prameter '-%" SC_c_FMT "'\n"),argv[arg][1]);
                     PrintUsage();
                     *retval = -1;
                     return _ERROR;
@@ -137,13 +144,7 @@ int getargs(HSQUIRRELVM v,int argc, char* argv[],SQInteger *retval)
         // src file
 
         if(arg<argc) {
-            const SQChar *filename=NULL;
-#ifdef SQUNICODE
-            mbstowcs(temp,argv[arg],strlen(argv[arg]));
-            filename=temp;
-#else
-            filename=argv[arg];
-#endif
+            const SQChar *filename=argv[arg];
 
             arg++;
 
@@ -156,13 +157,7 @@ int getargs(HSQUIRRELVM v,int argc, char* argv[],SQInteger *retval)
                 if(SQ_SUCCEEDED(sqstd_loadfile(v,filename,SQTrue))){
                     const SQChar *outfile = _SC("out.cnut");
                     if(output) {
-#ifdef SQUNICODE
-                        int len = (int)(strlen(output)+1);
-                        mbstowcs(sq_getscratchpad(v,len*sizeof(SQChar)),output,len);
-                        outfile = sq_getscratchpad(v,-1);
-#else
                         outfile = output;
-#endif
                     }
                     if(SQ_SUCCEEDED(sqstd_writeclosuretofile(v,outfile)))
                         return _DONE;
@@ -177,16 +172,7 @@ int getargs(HSQUIRRELVM v,int argc, char* argv[],SQInteger *retval)
                     sq_pushroottable(v);
                     for(i=arg;i<argc;i++)
                     {
-                        const SQChar *a;
-#ifdef SQUNICODE
-                        int alen=(int)strlen(argv[i]);
-                        a=sq_getscratchpad(v,(int)(alen*sizeof(SQChar)));
-                        mbstowcs(sq_getscratchpad(v,-1),argv[i],alen);
-                        sq_getscratchpad(v,-1)[alen] = _SC('\0');
-#else
-                        a=argv[i];
-#endif
-                        sq_pushstring(v,a,-1);
+                        sq_pushstring(v,argv[i],-1);
                         callargs++;
                         //sq_arrayappend(v,-2);
                     }
@@ -209,7 +195,7 @@ int getargs(HSQUIRRELVM v,int argc, char* argv[],SQInteger *retval)
                 const SQChar *err;
                 sq_getlasterror(v);
                 if(SQ_SUCCEEDED(sq_getstring(v,-1,&err))) {
-                    scprintf(_SC("Error [%s]\n"),err);
+                    scprintf(_SC("Error [%" SC_s_FMT "]\n"),err);
                     *retval = -2;
                     return _ERROR;
                 }
@@ -245,9 +231,9 @@ void Interactive(HSQUIRRELVM v)
         SQInteger i = 0;
         scprintf(_SC("\nsq>"));
         for(;;) {
-            int c;
+            scint_t c;
             if(done)return;
-            c = getchar();
+            c = scgetchar();
             if (c == _SC('\n')) {
                 if (i>0 && buffer[i-1] == _SC('\\'))
                 {
@@ -265,6 +251,11 @@ void Interactive(HSQUIRRELVM v)
                     string=!string;
                     buffer[i++] = (SQChar)c;
             }
+            else if( c == scEOF) {
+                buffer[i++] = _SC('\n');
+                done = 1;
+                break;
+            }
             else if (i >= MAXINPUT-1) {
                 scfprintf(stderr, _SC("sq : input line too long\n"));
                 break;
@@ -276,7 +267,7 @@ void Interactive(HSQUIRRELVM v)
         buffer[i] = _SC('\0');
 
         if(buffer[0]==_SC('=')){
-            scsprintf(sq_getscratchpad(v,MAXINPUT),(size_t)MAXINPUT,_SC("return (%s)"),&buffer[1]);
+            scsprintf(sq_getscratchpad(v,MAXINPUT),(size_t)MAXINPUT,_SC("return (%" SC_s_FMT ")"),&buffer[1]);
             memcpy(buffer,sq_getscratchpad(v,-1),(scstrlen(sq_getscratchpad(v,-1))+1)*sizeof(SQChar));
             retval=1;
         }
@@ -303,13 +294,21 @@ void Interactive(HSQUIRRELVM v)
     }
 }
 
-int main(int argc, char* argv[])
+int main(int argc, char **argv)
 {
     HSQUIRRELVM v;
     SQInteger retval = 0;
+    SQUnsignedInteger argv_sc_allocated;
+    const SQChar **argv_sc;
 #if defined(_MSC_VER) && defined(_DEBUG)
     _CrtSetAllocHook(MemAllocHook);
 #endif
+#ifdef SQUNICODE
+    setlocale( LC_CTYPE, "");
+#endif
+    argv_sc = sccvfromos( (void*)argv, argc, &argv_sc_allocated);
+    if( !argv_sc)
+        return 1;
 
     v=sq_open(1024);
     sq_setprintfunc(v,printfunc,errorfunc);
@@ -327,7 +326,7 @@ int main(int argc, char* argv[])
     sqstd_seterrorhandlers(v);
 
     //gets arguments
-    switch(getargs(v,argc,argv,&retval))
+    switch(getargs(v,argc,argv_sc,&retval))
     {
     case _INTERACTIVE:
         Interactive(v);
@@ -340,6 +339,9 @@ int main(int argc, char* argv[])
 
     sq_close(v);
 
+    if( argv_sc_allocated) {
+        sq_free( argv_sc, argv_sc_allocated);
+    }
 #if defined(_MSC_VER) && defined(_DEBUG)
     _getch();
     _CrtMemDumpAllObjectsSince( NULL );

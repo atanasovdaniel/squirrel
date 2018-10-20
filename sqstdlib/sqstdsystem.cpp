@@ -4,8 +4,9 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <sqstdsystem.h>
+#include <sqcvoschar.h>
 
-#ifdef SQUNICODE
+#ifdef _WIN32
 #include <wchar.h>
 #define scgetenv _wgetenv
 #define scsystem _wsystem
@@ -22,23 +23,48 @@
 
 static SQInteger _system_getenv(HSQUIRRELVM v)
 {
-    const SQChar *s;
-    if(SQ_SUCCEEDED(sq_getstring(v,2,&s))){
-        sq_pushstring(v,scgetenv(s),-1);
-        return 1;
+    const SQChar *name_sc[1];
+    sq_getstring(v,2,&name_sc[0]);
+    SQUnsignedInteger allocated;
+    const scoschar_t **name_oc = sccvtoos(name_sc,1,&allocated);
+    if( name_oc) {
+        const scoschar_t *val_oc[1];
+        val_oc[0] = scgetenv(name_oc[0]);
+        if( allocated) {
+            sq_free( name_oc, allocated);
+        }
+        if( val_oc[0]) {
+            const SQChar **val_sc = sccvfromos( val_oc, 1, &allocated);
+            if( val_sc) {
+                sq_pushstring(v,val_sc[0],-1);
+                if( allocated) {
+                    sq_free( val_sc, allocated);
+                }
+                return 1;
+            }
+        }
     }
-    return 0;
+    sq_pushnull(v);
+    return 1;
 }
 
 
 static SQInteger _system_system(HSQUIRRELVM v)
 {
-    const SQChar *s;
-    if(SQ_SUCCEEDED(sq_getstring(v,2,&s))){
-        sq_pushinteger(v,scsystem(s));
-        return 1;
+    const SQChar *cmd_sc[1];
+    sq_getstring(v,2,&cmd_sc[0]);
+    SQUnsignedInteger allocated;
+    const scoschar_t **cmd_oc = sccvtoos(cmd_sc,1,&allocated);
+    if( cmd_oc) {
+        sq_pushinteger(v,scsystem(cmd_oc[0]));
+        if( allocated) {
+            sq_free( cmd_oc, allocated);
+        }
     }
-    return sq_throwerror(v,_SC("wrong param"));
+    else {
+        sq_pushinteger(v,-1);
+    }
+    return 1;
 }
 
 
@@ -57,20 +83,42 @@ static SQInteger _system_time(HSQUIRRELVM v)
 
 static SQInteger _system_remove(HSQUIRRELVM v)
 {
-    const SQChar *s;
-    sq_getstring(v,2,&s);
-    if(scremove(s)==-1)
-        return sq_throwerror(v,_SC("remove() failed"));
+    const SQChar *name_sc[1];
+    sq_getstring(v,2,&name_sc[0]);
+    SQUnsignedInteger allocated;
+    const scoschar_t **name_oc = sccvtoos(name_sc,1,&allocated);
+    if( name_oc) {
+        int r = scremove(name_oc[0]);
+        if( allocated) {
+            sq_free( name_oc, allocated);
+        }
+        if(r==-1)
+            return sq_throwerror(v,_SC("remove() failed"));
+    }
+    else {
+        return sq_throwerror(v,_SC("argument conversion failed"));
+    }
     return 0;
 }
 
 static SQInteger _system_rename(HSQUIRRELVM v)
 {
-    const SQChar *oldn,*newn;
-    sq_getstring(v,2,&oldn);
-    sq_getstring(v,3,&newn);
-    if(screname(oldn,newn)==-1)
-        return sq_throwerror(v,_SC("rename() failed"));
+    const SQChar *names_sc[2];
+    sq_getstring(v,2,&names_sc[0]); // old
+    sq_getstring(v,3,&names_sc[1]); // new
+    SQUnsignedInteger allocated;
+    const scoschar_t **names_oc = sccvtoos(names_sc,2,&allocated);
+    if( names_oc) {
+        int r = screname(names_oc[0],names_oc[1]);
+        if( allocated) {
+            sq_free( names_oc, allocated);
+        }
+        if(r==-1)
+            return sq_throwerror(v,_SC("rename() failed"));
+    }
+    else {
+        return sq_throwerror(v,_SC("arguments conversion failed"));
+    }
     return 0;
 }
 

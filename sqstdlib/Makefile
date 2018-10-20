@@ -15,7 +15,8 @@ OBJS= \
 	sqstdsystem.o \
 	sqstdstring.o \
 	sqstdaux.o \
-	sqstdrex.o
+	sqstdrex.o \
+	sqcvoschar.o
 
 SRCS= \
 	sqstdblob.cpp \
@@ -25,7 +26,8 @@ SRCS= \
 	sqstdsystem.cpp \
 	sqstdstring.cpp \
 	sqstdaux.cpp \
-	sqstdrex.cpp
+	sqstdrex.cpp \
+	sqcvoschar.cpp
 
 
 sq32:

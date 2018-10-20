@@ -198,7 +198,7 @@ static SQInteger base_print(HSQUIRRELVM v)
     if(SQ_SUCCEEDED(sq_tostring(v,2)))
     {
         if(SQ_SUCCEEDED(sq_getstring(v,-1,&str))) {
-            if(_ss(v)->_printfunc) _ss(v)->_printfunc(v,_SC("%s"),str);
+            if(_ss(v)->_printfunc) _ss(v)->_printfunc(v,_SC("%" SC_s_FMT ""),str);
             return 0;
         }
     }
@@ -211,7 +211,7 @@ static SQInteger base_error(HSQUIRRELVM v)
     if(SQ_SUCCEEDED(sq_tostring(v,2)))
     {
         if(SQ_SUCCEEDED(sq_getstring(v,-1,&str))) {
-            if(_ss(v)->_errorfunc) _ss(v)->_errorfunc(v,_SC("%s"),str);
+            if(_ss(v)->_errorfunc) _ss(v)->_errorfunc(v,_SC("%" SC_s_FMT ""),str);
             return 0;
         }
     }

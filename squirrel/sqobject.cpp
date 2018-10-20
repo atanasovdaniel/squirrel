@@ -327,7 +327,7 @@ bool WriteObject(HSQUIRRELVM v,SQUserPointer up,SQWRITEFUNC write,SQObjectPtr &o
     case OT_NULL:
         break;
     default:
-        v->Raise_Error(_SC("cannot serialize a %s"),GetTypeName(o));
+        v->Raise_Error(_SC("cannot serialize a %" SC_s_FMT ""),GetTypeName(o));
         return false;
     }
     return true;
@@ -362,7 +362,7 @@ bool ReadObject(HSQUIRRELVM v,SQUserPointer up,SQREADFUNC read,SQObjectPtr &o)
         o.Null();
         break;
     default:
-        v->Raise_Error(_SC("cannot serialize a %s"),IdType2Name(t));
+        v->Raise_Error(_SC("cannot serialize a %" SC_s_FMT ""),IdType2Name(t));
         return false;
     }
     return true;

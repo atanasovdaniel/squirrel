@@ -122,9 +122,9 @@ public:
                     default:
                         etypename = _lex.Tok2Str(tok);
                     }
-                    Error(_SC("expected '%s'"), etypename);
+                    Error(_SC("expected '%" SC_s_FMT "'"), etypename);
                 }
-                Error(_SC("expected '%c'"), tok);
+                Error(_SC("expected '%" SC_c_FMT "'"), tok);
             }
         }
         SQObjectPtr ret;
@@ -770,7 +770,7 @@ public:
                         constid = Expect(TK_IDENTIFIER);
                         if(!_table(constant)->Get(constid, constval)) {
                             constval.Null();
-                            Error(_SC("invalid constant [%s.%s]"), _stringval(id), _stringval(constid));
+                            Error(_SC("invalid constant [%" SC_s_FMT ".%" SC_s_FMT "]"), _stringval(id), _stringval(constid));
                         }
                     }
                     else {
@@ -1171,7 +1171,7 @@ public:
         }
         _fs->AddInstruction(_OP_JMP, 0, jmppos - _fs->GetCurrentPos() - 1, 0);
         if(jzpos>  0) _fs->SetInstructionParam(jzpos, 1, _fs->GetCurrentPos() - jzpos);
-        
+
         END_BREAKBLE_BLOCK(continuetrg);
 
 		END_SCOPE();

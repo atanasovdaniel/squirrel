@@ -21,7 +21,7 @@ void sqstd_printcallstack(HSQUIRRELVM v)
             const SQChar *src=_SC("unknown");
             if(si.funcname)fn=si.funcname;
             if(si.source)src=si.source;
-            pf(v,_SC("*FUNCTION [%s()] %s line [%d]\n"),fn,src,si.line);
+            pf(v,_SC("*FUNCTION [%" SC_s_FMT "()] %" SC_s_FMT " line [%d]\n"),fn,src,si.line);
             level++;
         }
         level=0;
@@ -35,57 +35,57 @@ void sqstd_printcallstack(HSQUIRRELVM v)
                 switch(sq_gettype(v,-1))
                 {
                 case OT_NULL:
-                    pf(v,_SC("[%s] NULL\n"),name);
+                    pf(v,_SC("[%" SC_s_FMT "] NULL\n"),name);
                     break;
                 case OT_INTEGER:
                     sq_getinteger(v,-1,&i);
-                    pf(v,_SC("[%s] %d\n"),name,i);
+                    pf(v,_SC("[%" SC_s_FMT "] %d\n"),name,i);
                     break;
                 case OT_FLOAT:
                     sq_getfloat(v,-1,&f);
-                    pf(v,_SC("[%s] %.14g\n"),name,f);
+                    pf(v,_SC("[%" SC_s_FMT "] %.14g\n"),name,f);
                     break;
                 case OT_USERPOINTER:
-                    pf(v,_SC("[%s] USERPOINTER\n"),name);
+                    pf(v,_SC("[%" SC_s_FMT "] USERPOINTER\n"),name);
                     break;
                 case OT_STRING:
                     sq_getstring(v,-1,&s);
-                    pf(v,_SC("[%s] \"%s\"\n"),name,s);
+                    pf(v,_SC("[%" SC_s_FMT "] \"%" SC_s_FMT "\"\n"),name,s);
                     break;
                 case OT_TABLE:
-                    pf(v,_SC("[%s] TABLE\n"),name);
+                    pf(v,_SC("[%" SC_s_FMT "] TABLE\n"),name);
                     break;
                 case OT_ARRAY:
-                    pf(v,_SC("[%s] ARRAY\n"),name);
+                    pf(v,_SC("[%" SC_s_FMT "] ARRAY\n"),name);
                     break;
                 case OT_CLOSURE:
-                    pf(v,_SC("[%s] CLOSURE\n"),name);
+                    pf(v,_SC("[%" SC_s_FMT "] CLOSURE\n"),name);
                     break;
                 case OT_NATIVECLOSURE:
-                    pf(v,_SC("[%s] NATIVECLOSURE\n"),name);
+                    pf(v,_SC("[%" SC_s_FMT "] NATIVECLOSURE\n"),name);
                     break;
                 case OT_GENERATOR:
-                    pf(v,_SC("[%s] GENERATOR\n"),name);
+                    pf(v,_SC("[%" SC_s_FMT "] GENERATOR\n"),name);
                     break;
                 case OT_USERDATA:
-                    pf(v,_SC("[%s] USERDATA\n"),name);
+                    pf(v,_SC("[%" SC_s_FMT "] USERDATA\n"),name);
                     break;
                 case OT_THREAD:
-                    pf(v,_SC("[%s] THREAD\n"),name);
+                    pf(v,_SC("[%" SC_s_FMT "] THREAD\n"),name);
                     break;
                 case OT_CLASS:
-                    pf(v,_SC("[%s] CLASS\n"),name);
+                    pf(v,_SC("[%" SC_s_FMT "] CLASS\n"),name);
                     break;
                 case OT_INSTANCE:
-                    pf(v,_SC("[%s] INSTANCE\n"),name);
+                    pf(v,_SC("[%" SC_s_FMT "] INSTANCE\n"),name);
                     break;
                 case OT_WEAKREF:
-                    pf(v,_SC("[%s] WEAKREF\n"),name);
+                    pf(v,_SC("[%" SC_s_FMT "] WEAKREF\n"),name);
                     break;
                 case OT_BOOL:{
                     SQBool bval;
                     sq_getbool(v,-1,&bval);
-                    pf(v,_SC("[%s] %s\n"),name,bval == SQTrue ? _SC("true"):_SC("false"));
+                    pf(v,_SC("[%" SC_s_FMT "] %" SC_s_FMT "\n"),name,bval == SQTrue ? _SC("true"):_SC("false"));
                              }
                     break;
                 default: assert(0); break;
@@ -103,7 +103,7 @@ static SQInteger _sqstd_aux_printerror(HSQUIRRELVM v)
         const SQChar *sErr = 0;
         if(sq_gettop(v)>=1) {
             if(SQ_SUCCEEDED(sq_getstring(v,2,&sErr)))   {
-                pf(v,_SC("\nAN ERROR HAS OCCURRED [%s]\n"),sErr);
+                pf(v,_SC("\nAN ERROR HAS OCCURRED [%" SC_s_FMT "]\n"),sErr);
             }
             else{
                 pf(v,_SC("\nAN ERROR HAS OCCURRED [unknown]\n"));
@@ -118,7 +118,7 @@ void _sqstd_compiler_error(HSQUIRRELVM v,const SQChar *sErr,const SQChar *sSourc
 {
     SQPRINTFUNCTION pf = sq_geterrorfunc(v);
     if(pf) {
-        pf(v,_SC("%s line = (%d) column = (%d) : error %s\n"),sSource,line,column,sErr);
+        pf(v,_SC("%" SC_s_FMT " line = (%d) column = (%d) : error %" SC_s_FMT "\n"),sSource,line,column,sErr);
     }
 }
 

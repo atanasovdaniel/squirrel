@@ -18,7 +18,7 @@ static bool sq_aux_gettypedarg(HSQUIRRELVM v,SQInteger idx,SQObjectType type,SQO
     *o = &stack_get(v,idx);
     if(sq_type(**o) != type){
         SQObjectPtr oval = v->PrintObjVal(**o);
-        v->Raise_Error(_SC("wrong argument type, expected '%s' got '%.50s'"),IdType2Name(type),_stringval(oval));
+        v->Raise_Error(_SC("wrong argument type, expected '%" SC_s_FMT "' got '%.50" SC_s_FMT "'"),IdType2Name(type),_stringval(oval));
         return false;
     }
     return true;
@@ -35,7 +35,7 @@ static bool sq_aux_gettypedarg(HSQUIRRELVM v,SQInteger idx,SQObjectType type,SQO
 SQInteger sq_aux_invalidtype(HSQUIRRELVM v,SQObjectType type)
 {
     SQUnsignedInteger buf_size = 100 *sizeof(SQChar);
-    scsprintf(_ss(v)->GetScratchPad(buf_size), buf_size, _SC("unexpected type %s"), IdType2Name(type));
+    scsprintf(_ss(v)->GetScratchPad(buf_size), buf_size, _SC("unexpected type %" SC_s_FMT ""), IdType2Name(type));
     return sq_throwerror(v, _ss(v)->GetScratchPad(-1));
 }
 
@@ -1205,7 +1205,7 @@ SQRESULT sq_tailcall(HSQUIRRELVM v, SQInteger nparams)
 	{
 		return sq_throwerror(v, _SC("generators cannot be tail called"));
 	}
-	
+
 	SQInteger stackbase = (v->_top - nparams) - v->_stackbase;
 	if (!v->TailCall(clo, stackbase, nparams)) {
 		return SQ_ERROR;
