@@ -294,21 +294,10 @@ void Interactive(HSQUIRRELVM v)
     }
 }
 
-int main(int argc, char **argv)
+static int sq_main(int argc, const SQChar **argv)
 {
     HSQUIRRELVM v;
     SQInteger retval = 0;
-    SQUnsignedInteger argv_sc_allocated;
-    const SQChar **argv_sc;
-#if defined(_MSC_VER) && defined(_DEBUG)
-    _CrtSetAllocHook(MemAllocHook);
-#endif
-#ifdef SQUNICODE
-    setlocale( LC_CTYPE, "");
-#endif
-    argv_sc = sccvfromos( (void*)argv, argc, &argv_sc_allocated);
-    if( !argv_sc)
-        return 1;
 
     v=sq_open(1024);
     sq_setprintfunc(v,printfunc,errorfunc);
@@ -326,7 +315,7 @@ int main(int argc, char **argv)
     sqstd_seterrorhandlers(v);
 
     //gets arguments
-    switch(getargs(v,argc,argv_sc,&retval))
+    switch(getargs(v,argc,argv,&retval))
     {
     case _INTERACTIVE:
         Interactive(v);
@@ -338,14 +327,76 @@ int main(int argc, char **argv)
     }
 
     sq_close(v);
+    return retval;
+}
 
+#ifdef _WIN32
+    #if defined(_MSC_VER)
+        int wmain( int argc, wchar_t **wargv, wchar_t **wenvp)
+        {
+            int r;
+        #if defined(_DEBUG)
+            _CrtSetAllocHook(MemAllocHook);
+        #endif
+    #else // defined(_MSC_VER)
+        int _CRT_glob = 0;
+        extern void __wgetmainargs(int*,wchar_t***,wchar_t***,int,int*);
+        int main( int SQ_UNUSED_ARG(xargc), char ** SQ_UNUSED_ARG(xargv))
+        {
+            wchar_t **wenvp, **wargv;
+            int argc, si = 0;
+            int r;
+            __wgetmainargs( &argc, &wargv, &wenvp, _CRT_glob, &si); // this also creates the global variable __wargv
+    #endif // defined(_MSC_VER)
+        #ifdef SQUNICODE
+            #define argv_sc wargv
+        #else // SQUNICODE
+            SQUnsignedInteger argv_sc_allocated;
+            const SQChar **argv_sc;
+            setlocale( LC_CTYPE, "");
+            argv_sc = sccvfromos( (void*)wargv, argc, &argv_sc_allocated);
+            if( !argv_sc) {
+                scfprintf(stderr, _SC("sq : can't encode program arguments\n"));
+                return 1;
+            }
+        #endif // SQUNICODE
+            r = sq_main( argc, argv_sc);
+        #ifndef SQUNICODE
+            if( argv_sc_allocated) {
+                sq_free( argv_sc, argv_sc_allocated);
+            }
+        #endif // SQUNICODE
+        #if defined(_MSC_VER) && defined(_DEBUG)
+            _getch();
+            _CrtMemDumpAllObjectsSince( NULL );
+        #endif
+            return r;
+        }
+#else // _WIN32
+
+int main( int argc, char **argv)
+{
+    int r;
+#ifdef SQUNICODE
+    SQUnsignedInteger argv_sc_allocated;
+    const SQChar **argv_sc;
+    setlocale( LC_CTYPE, "");
+    argv_sc = sccvfromos( (void*)argv, argc, &argv_sc_allocated);
+    if( !argv_sc) {
+        scfprintf(stderr, _SC("sq : can't encode program arguments\n"));
+        return 1;
+    }
+#else // SQUNICODE
+    #define argv_sc argv
+#endif // SQUNICODE
+    r = sq_main( argc, (void*)argv_sc);
+#ifdef SQUNICODE
     if( argv_sc_allocated) {
         sq_free( argv_sc, argv_sc_allocated);
     }
-#if defined(_MSC_VER) && defined(_DEBUG)
-    _getch();
-    _CrtMemDumpAllObjectsSince( NULL );
-#endif
-    return retval;
+#endif // SQUNICODE
+    return r;
 }
+
+#endif // _WIN32
 
