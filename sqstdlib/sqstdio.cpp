@@ -3,7 +3,6 @@
 #include <stdio.h>
 #include <squirrel.h>
 #include <sqstdio.h>
-#include "sqstdstream.h"
 
 #define SQSTD_FILE_TYPE_TAG ((SQUnsignedInteger)(SQSTD_STREAM_TYPE_TAG | 0x00000001))
 //basic API
@@ -22,7 +21,7 @@ SQInteger sqstd_fread(void* buffer, SQInteger size, SQInteger count, SQFILE file
     return ret;
 }
 
-SQInteger sqstd_fwrite(const SQUserPointer buffer, SQInteger size, SQInteger count, SQFILE file)
+SQInteger sqstd_fwrite(const void *buffer, SQInteger size, SQInteger count, SQFILE file)
 {
     return (SQInteger)fwrite(buffer,size,count,(FILE *)file);
 }
@@ -63,7 +62,6 @@ SQInteger sqstd_feof(SQFILE file)
 struct SQFile : public SQStream {
     SQFile() { _handle = NULL; _owns = false;}
     SQFile(SQFILE file, bool owns) { _handle = file; _owns = owns;}
-    virtual ~SQFile() { Close(); }
     bool Open(const SQChar *filename ,const SQChar *mode) {
         Close();
         if( (_handle = sqstd_fopen(filename,mode)) ) {
@@ -72,17 +70,23 @@ struct SQFile : public SQStream {
         }
         return false;
     }
-    void Close() {
-        if(_handle && _owns) {
-            sqstd_fclose(_handle);
-            _handle = NULL;
-            _owns = false;
+    SQInteger Close() {
+		SQInteger r = 0;
+        if( _handle && _owns) {
+            r = sqstd_fclose(_handle);
         }
+        _handle = NULL;
+        _owns = false;
+		return r;
     }
+	void Release() {
+		this->~SQFile();
+		sq_free(this,sizeof(SQFile));
+	}
     SQInteger Read(void *buffer,SQInteger size) {
         return sqstd_fread(buffer,1,size,_handle);
     }
-    SQInteger Write(void *buffer,SQInteger size) {
+    SQInteger Write(const void *buffer,SQInteger size) {
         return sqstd_fwrite(buffer,1,size,_handle);
     }
     SQInteger Flush() {
@@ -93,10 +97,12 @@ struct SQFile : public SQStream {
     }
     SQInteger Len() {
         SQInteger prevpos=Tell();
-        Seek(0,SQ_SEEK_END);
-        SQInteger size=Tell();
-        Seek(prevpos,SQ_SEEK_SET);
-        return size;
+        if( Seek(0,SQ_SEEK_END) == 0) {
+			SQInteger size=Tell();
+			Seek(prevpos,SQ_SEEK_SET);
+			return size;
+		}
+		return -1;
     }
     SQInteger Seek(SQInteger offset, SQInteger origin)  {
         return sqstd_fseek(_handle,offset,origin);
@@ -109,6 +115,12 @@ private:
     bool _owns;
 };
 
+SQSTREAM sqstd_createfilestream(SQFILE file, SQBool own)
+{
+    SQFile *f = new (sq_malloc(sizeof(SQFile)))SQFile(file,own);
+    return (SQSTREAM)f;
+}
+
 static SQInteger _file__typeof(HSQUIRRELVM v)
 {
     sq_pushstring(v,_SC("file"),-1);
@@ -118,8 +130,8 @@ static SQInteger _file__typeof(HSQUIRRELVM v)
 static SQInteger _file_releasehook(SQUserPointer p, SQInteger SQ_UNUSED_ARG(size))
 {
     SQFile *self = (SQFile*)p;
-    self->~SQFile();
-    sq_free(self,sizeof(SQFile));
+    self->Close();
+    self->Release();
     return 1;
 }
 

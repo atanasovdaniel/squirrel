@@ -12,10 +12,14 @@ struct SQBlob : public SQStream
         _ptr = 0;
         _owns = true;
     }
-    virtual ~SQBlob() {
+    ~SQBlob() {
         sq_free(_buf, _allocated);
     }
-    SQInteger Write(void *buffer, SQInteger size) {
+	void Release() {
+		this->~SQBlob();
+		sq_free(this,sizeof(SQBlob));
+	}
+    SQInteger Write(const void *buffer, SQInteger size) {
         if(!CanAdvance(size)) {
             GrowBufOf(_ptr + size - _size);
         }
