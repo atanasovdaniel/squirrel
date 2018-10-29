@@ -13,8 +13,8 @@ SQUIRREL_API SQRESULT sqstd_register_packagelib(HSQUIRRELVM v);
 
 // path
 SQUIRREL_API SQRESULT sqstd_package_replacechar(HSQUIRRELVM v, SQChar the_char);
-SQUIRREL_API SQRESULT sqstd_package_pathadd( HSQUIRRELVM v, SQInteger path_idx, const SQChar **suffixes);
-SQUIRREL_API SQRESULT sqstd_package_pathaddlist( HSQUIRRELVM v, SQInteger path_idx, const SQChar **suffixes);
+SQUIRREL_API SQRESULT sqstd_package_pathadd( HSQUIRRELVM v, SQInteger path_idx);
+SQUIRREL_API SQRESULT sqstd_package_pathaddlist( HSQUIRRELVM v, SQInteger path_idx);
 SQUIRREL_API SQInteger sqstd_package_pathsearch(HSQUIRRELVM v, SQInteger path_idx);
 
 // nut
