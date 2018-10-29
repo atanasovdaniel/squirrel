@@ -12,6 +12,7 @@ OBJS= \
 	sqstdio.o \
 	sqstdstream.o \
 	sqstdmath.o \
+	sqstdpackage.o \
 	sqstdsystem.o \
 	sqstdstring.o \
 	sqstdaux.o \
@@ -22,6 +23,7 @@ SRCS= \
 	sqstdio.cpp \
 	sqstdstream.cpp \
 	sqstdmath.cpp \
+	sqstdpackage.cpp \
 	sqstdsystem.cpp \
 	sqstdstring.cpp \
 	sqstdaux.cpp \

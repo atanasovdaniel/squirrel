@@ -15,6 +15,7 @@
 #include <sqstdio.h>
 #include <sqstdmath.h>
 #include <sqstdstring.h>
+#include <sqstdpackage.h>
 #include <sqstdaux.h>
 
 #ifdef SQUNICODE
@@ -321,6 +322,7 @@ int main(int argc, char* argv[])
     sqstd_register_systemlib(v);
     sqstd_register_mathlib(v);
     sqstd_register_stringlib(v);
+    sqstd_register_packagelib(v);
 
     //aux library
     //sets error handlers
