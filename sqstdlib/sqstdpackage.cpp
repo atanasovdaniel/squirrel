@@ -87,9 +87,14 @@ static SQInteger pkg_getenv(HSQUIRRELVM v,const SQChar *name)
 #define SQ_PACKAGE_NUT_PATH_ENV     _SC("SQPATH")
 #define SQ_PACKAGE_NUT_SFX          _SC("?.nut;?/init.nut")
 
+static char PACKAGE_NUT_ID;
+
 static SQInteger _package_nut_SEARCH(HSQUIRRELVM v)
 {
-    // package, pkg_name
+    // package, pkg_name, hint...
+    if(sq_gettop(v) > 2) {
+        sq_settop(v,2); // package, pkg_name, [hint...]
+    }
     const SQChar *path;
     const SQChar *sfx;
     const SQChar *what;
@@ -140,7 +145,7 @@ static SQInteger register_nut_package( HSQUIRRELVM v)
     sq_rawset(v,-3);                                // package, ["SUFFIXES", val]
     sq_pushstring(v,_SC("SEARCH"),-1);              // package, "SEARCH"
     sq_newclosure(v,_package_nut_SEARCH,0);         // package, "SEARCH", closure
-    sq_setparamscheck(v,2,_SC(".s"));
+    sq_setparamscheck(v,-2,_SC(".ss"));
     sq_push(v,-3);                                  // package, "SEARCH", closure, package
     sq_bindenv(v,-2);                               // package, "SEARCH", closure, [package], bclosure
     sq_remove(v,-2);                                // package, "SEARCH", [closure], bclosure
@@ -150,7 +155,45 @@ static SQInteger register_nut_package( HSQUIRRELVM v)
     sq_arrayinsert(v,-2,0);                         // package, "SEARCH", bclosure, searchers, [bclosure]
     sq_poptop(v);                                   // package, "SEARCH", bclosure, [searchers]
     sq_rawset(v,-3);                                // package, ["SEARCH", bclosure]
+    sq_pushregistrytable(v);                        // package, registry
+    sq_pushuserpointer(v,&PACKAGE_NUT_ID);          // package, registry, NUT_ID
+    sq_push(v,-3);                                  // package, registry, NUT_ID, package
+    sq_rawset(v,-3);                                // package, registry, [NUT_ID, package]
+    sq_poptop(v);                                   // package, [registry]
     return 1;
+}
+
+SQRESULT sqstd_package_nutaddpath(HSQUIRRELVM v, const SQChar *path)
+{
+    const SQChar *cur_path;
+    SQInteger cur_path_len;
+    sq_pushregistrytable(v);                        // registry
+    sq_pushuserpointer(v,&PACKAGE_NUT_ID);          // registry, NUT_ID
+    if(SQ_FAILED(sq_rawget(v,-2))) {                // registry, [NUT_ID], package_nut
+        sq_poptop(v);                               // [registry]
+        return SQ_ERROR;
+    }
+    sq_remove(v,-2);                                // [registry], package_nut
+    sq_pushstring(v,_SC("PATH"),-1);                // package_nut, "PATH"
+    sq_push(v,-1);                                  // package_nut, "PATH", "PATH"
+    if(SQ_FAILED(sq_rawget(v,-3))) {                // package_nut, "PATH", ["PATH"], cur_path
+        sq_pop(v,2);                                // [package_nut, "PATH"]
+        return SQ_ERROR;
+    }
+    if(SQ_FAILED(sq_getstringandsize(v,-1,&cur_path,&cur_path_len))) {
+        cur_path = _SC("");
+        cur_path_len = 0;
+    }
+    SQInteger path_len = scstrlen(path);
+    SQChar *new_path = sq_getscratchpad(v,(path_len+1+cur_path_len)*sizeof(SQChar));
+    memcpy(new_path,path,path_len*sizeof(SQChar));
+    new_path[path_len] = LIST_SEP_CHAR;
+    memcpy(new_path+path_len+1,cur_path,cur_path_len*sizeof(SQChar));
+    sq_poptop(v);                                   // package_nut, "PATH", [cur_path]
+    sq_pushstring(v,new_path,path_len+1+cur_path_len); // package_nut, "PATH", new_path
+    sq_rawset(v,-3);                                // package_nut, ["PATH", new_path]
+    sq_poptop(v);                                   // [package_nut]
+    return SQ_OK;
 }
 
 /* ====================================
@@ -212,7 +255,10 @@ SQInteger sqstd_package_searchcbk(HSQUIRRELVM v, const SQChar *what, const SQCha
             SQChar *p;
             memcpy(res,epath.from,epath.to-epath.from);
             p = res+(epath.to-epath.from);
-            while( ((p-res)>0) && (p[-1] == DIR_SEP_CHAR)) p--;
+            while( ((p-res)>0) && (
+                    (p[-1] == DIR_SEP_CHAR) ||
+                    ((DIR_SEP_CHAR != _SC('/')) && (p[-1] == _SC('/')))
+                )) p--;
             *p++ = DIR_SEP_CHAR;
             while( esuff.from < esuff.to) {
                 if( *esuff.from == REPLACE_CHAR) {
@@ -286,7 +332,8 @@ static SQRESULT run_searchers(HSQUIRRELVM v, SQInteger idx)
         sq_remove(v,-2);                                // searchers_array, iterator, [key], search_fct
         sq_pushroottable(v);                            // searchers_array, iterator, search_fct, root
         sq_push(v,idx);                                 // searchers_array, iterator, search_fct, root, package_name
-        if(SQ_FAILED(sq_call(v,2,SQTrue,SQFalse))) {    // searchers_array, iterator, search_fct, [root, package_name]
+        sq_push(v,idx+1);                               // searchers_array, iterator, search_fct, root, package_name, hint
+        if(SQ_FAILED(sq_call(v,3,SQTrue,SQFalse))) {    // searchers_array, iterator, search_fct, [root, package_name]
             sq_pop(v,3);                                // [searchers_array, iterator, search_fct]
             return SQ_ERROR;
         }
@@ -307,7 +354,8 @@ static SQRESULT load_package(HSQUIRRELVM v, SQInteger idx)
     if(SQ_FAILED(run_searchers(v,idx))) return SQ_ERROR; // load_fct
     sq_pushroottable(v);                            // load_fct, root
     sq_push(v,idx);                                 // load_fct, root, package_name
-    if(SQ_SUCCEEDED(sq_call(v,2,SQTrue,SQFalse))) {  // load_fct, [root, package_name]
+    sq_push(v,idx+1);                               // load_fct, root, package_name, hint
+    if(SQ_SUCCEEDED(sq_call(v,3,SQTrue,SQFalse))) {  // load_fct, [root, package_name]
         sq_remove(v,-2);                            // [load_fct], package
         return SQ_OK;                               // package
     }
@@ -388,28 +436,37 @@ static SQInteger require( HSQUIRRELVM v, SQInteger idx)
     }
 }
 
-SQRESULT sqstd_package_require(HSQUIRRELVM v, const SQChar *package)
+SQRESULT sqstd_package_require(HSQUIRRELVM v, const SQChar *package, const SQChar *hint)
 {
-    sq_pushstring(v,package,-1);
-    return require(v, -1);
+    sq_pushstring(v,package,-1);        // pkg_name
+    sq_pushstring(v,hint ? hint : _SC(""),-1);           // pkg_name, hint
+    if(SQ_SUCCEEDED(require(v, -1))) {  // pkg_name, hint, package
+        sq_remove(v,-2);                // pkg_name, [hint], package
+        sq_remove(v,-2);                // [pkg_name], package
+        return SQ_OK;                   // package
+    }
+    else {
+        sq_pop(v,2);                    // [pkg_name, hint]
+        return SQ_ERROR;
+    }
 }
 
-SQRESULT sqstd_package_registerfct( HSQUIRRELVM v, const SQChar *package, SQFUNCTION fct)
+SQRESULT sqstd_package_registerfct( HSQUIRRELVM v, const SQChar *package, SQFUNCTION loader_fct)
 {
     if(SQ_FAILED(get_loaded_table(v))) return SQ_ERROR; // loaded_table
     sq_pushstring(v,package,-1);                        // loaded_table, package_name
     if(SQ_FAILED(sq_rawget(v,-2)))                      // loaded_table, package_name
     {
         sq_reseterror(v);
-        sq_newclosure(v,fct,0);                             // loaded_table, fct
-        sq_pushroottable(v);                                // loaded_table, fct, root
-        if(SQ_SUCCEEDED(sq_call(v,1,SQTrue,SQFalse))) {     // loaded_table, fct, [root], package
-            sq_remove(v,-2);                                // loaded_table, [fct], package
+        sq_newclosure(v,loader_fct,0);                      // loaded_table, loader_fct
+        sq_pushroottable(v);                                // loaded_table, loader_fct, root
+        if(SQ_SUCCEEDED(sq_call(v,1,SQTrue,SQFalse))) {     // loaded_table, loader_fct, [root], package
+            sq_remove(v,-2);                                // loaded_table, [loader_fct], package
             sq_pushstring(v,package,-1);                    // loaded_table, package, package_name
             sq_push(v,-2);                                  // loaded_table, package, package_name, package
             sq_rawset(v,-4);                                // loaded_table, package, [package_name, package]
             sq_remove(v,-2);                                // [loaded_table], package
-            return 1;                                       // package
+            return SQ_OK;                                   // package
         }
         else {
             sq_pop(v,2);                                    // [loaded_table, fct]
@@ -418,7 +475,7 @@ SQRESULT sqstd_package_registerfct( HSQUIRRELVM v, const SQChar *package, SQFUNC
     }
     else {
         sq_remove(v,-2);                                    // [loaded_table], package
-        return 1;                                           // package
+        return SQ_OK;                                       // package
     }
 }
 
@@ -427,6 +484,12 @@ SQRESULT sqstd_package_registerfct( HSQUIRRELVM v, const SQChar *package, SQFUNC
 
 static SQInteger _g_package_require( HSQUIRRELVM v)
 {
+    if(sq_gettop(v) > 2) {
+        sq_settop(v,3);
+    }
+    else {
+        sq_pushstring(v,_SC(""),-1);
+    }
     if(SQ_FAILED(require(v, 2)))
         return SQ_ERROR;
     return 1;
@@ -479,7 +542,7 @@ static SQInteger _package_searchfile(HSQUIRRELVM v)
 
 #define _DECL_GLOBALPACKAGE_FUNC(name,nparams,typecheck) {_SC(#name),_g_package_##name,nparams,typecheck}
 static const SQRegFunction g_package_funcs[]={
-    _DECL_GLOBALPACKAGE_FUNC(require,2,_SC(".s")),
+    _DECL_GLOBALPACKAGE_FUNC(require,-2,_SC(".ss")),
     {NULL,(SQFUNCTION)0,0,NULL}
 };
 

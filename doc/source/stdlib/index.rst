@@ -35,5 +35,6 @@ THE SOFTWARE.
    stdmathlib.rst
    stdsystemlib.rst
    stdstringlib.rst
+   stdpackagelib.rst
    stdauxlib.rst
 

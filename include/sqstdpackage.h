@@ -6,8 +6,8 @@ extern "C" {
 #endif
 
 // package
-SQUIRREL_API SQRESULT sqstd_package_require(HSQUIRRELVM v, const SQChar *package);
-SQUIRREL_API SQRESULT sqstd_package_registerfct(HSQUIRRELVM v, const SQChar *package, SQFUNCTION fct);
+SQUIRREL_API SQRESULT sqstd_package_require(HSQUIRRELVM v, const SQChar *package, const SQChar *hint);
+SQUIRREL_API SQRESULT sqstd_package_registerfct(HSQUIRRELVM v, const SQChar *package, SQFUNCTION loader_fct);
 SQUIRREL_API SQRESULT sqstd_package_getsearchers(HSQUIRRELVM v);
 SQUIRREL_API SQRESULT sqstd_register_packagelib(HSQUIRRELVM v);
 
